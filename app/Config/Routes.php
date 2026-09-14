@@ -21,6 +21,7 @@ $routes->group('sesiones', ['filter' => 'auth'], static function (RouteCollectio
     $routes->get('contador/(:segment)', 'SesionesController::contador/$1');
     $routes->post('enviar/(:segment)', 'SesionesController::enviar/$1');
     $routes->post('cerrar/(:segment)', 'SesionesController::cerrar/$1');
+    $routes->post('forzar-avance/(:segment)', 'SesionesController::forzarAvance/$1');
     $routes->get('resultados/(:segment)', 'SesionesController::resultados/$1');
     $routes->post('liderazgo/(:segment)', 'SesionesController::liderazgo/$1');
     $routes->get('(:segment)', 'SesionesController::listar/$1');
@@ -31,4 +32,13 @@ $routes->group('liderazgo-comunicacion', static function (RouteCollection $route
     $routes->post('asignar', 'LiderazgoComunicacionController::asignar');
     $routes->get('registrado/(:segment)', 'LiderazgoComunicacionController::registrado/$1');
     $routes->get('rol/(:segment)', 'LiderazgoComunicacionController::rol/$1');
+});
+
+$routes->group('el-meridian', static function (RouteCollection $routes) {
+    $routes->get('registro/(:segment)', 'ElMeridianController::registro/$1');
+    $routes->post('asignar', 'ElMeridianController::asignar');
+    $routes->get('registrado/(:segment)', 'ElMeridianController::registrado/$1');
+    $routes->get('rol/(:segment)', 'ElMeridianController::rol/$1');
+    $routes->post('momento/(:segment)', 'ElMeridianController::responderMomento/$1');
+    $routes->get('estado/(:segment)', 'ElMeridianController::estado/$1');
 });

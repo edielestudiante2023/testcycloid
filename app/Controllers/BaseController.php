@@ -27,7 +27,7 @@ abstract class BaseController extends Controller
 
     // protected $session;
 
-    protected $helpers = ['liderazgo_comunicacion', 'url'];
+    protected $helpers = ['liderazgo_comunicacion', 'el_meridian', 'url'];
 
     /**
      * @return void

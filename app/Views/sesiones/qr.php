@@ -53,6 +53,36 @@
                 <button type="submit" class="btn-danger">Cerrar ejercicio</button>
             </form>
         </div>
+
+        <?php if (!empty($progresoEquipos)): ?>
+        <div class="card">
+            <h2>Progreso por equipo</h2>
+            <table>
+                <thead><tr><th>Equipo</th><th>Momento</th><th>Respondieron</th><th></th></tr></thead>
+                <tbody>
+                <?php foreach ($progresoEquipos as $p): ?>
+                    <tr>
+                        <td><?= esc($p['team']) ?></td>
+                        <td><?= $p['terminado'] ? 'Terminado' : ($p['momentoActual'] . ' de ' . $p['totalMomentos']) ?></td>
+                        <td><?= (int) $p['respondidos'] ?> / <?= (int) $p['totalEquipo'] ?></td>
+                        <td>
+                            <?php if (!$p['terminado'] && $p['respondidos'] < $p['totalEquipo']): ?>
+                            <form method="post" action="<?= site_url('sesiones/forzar-avance/' . $sesion['token']) ?>"
+                                  onsubmit="return confirm('¿Forzar el avance del <?= esc($p['team'], 'js') ?>? A quien no haya respondido se le va a registrar una respuesta vacía en este momento.');" style="margin:0;">
+                                <input type="hidden" name="team" value="<?= esc($p['team']) ?>">
+                                <input type="hidden" name="momento" value="<?= (int) $p['momentoActual'] ?>">
+                                <button type="submit" style="margin:0; padding:6px 12px; font-size:0.85rem;">Forzar avance</button>
+                            </form>
+                            <?php endif; ?>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+        <script>setInterval(function () { window.location.reload(); }, 8000);</script>
+        <?php endif; ?>
+
         <script>
         var inicio = new Date(<?= json_encode(str_replace(' ', 'T', $sesion['iniciada_at']) . 'Z') ?>).getTime();
         var duracionMs = <?= (int) $sesion['duracion_min'] ?> * 60 * 1000;

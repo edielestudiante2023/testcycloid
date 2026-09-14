@@ -5,6 +5,7 @@ namespace App\Controllers;
 use App\Libraries\SendGridMailer;
 use App\Models\DinamicaModel;
 use App\Models\ParticipantModel;
+use App\Models\RespuestaMomentoModel;
 use App\Models\SesionModel;
 
 class SesionesController extends BaseController
@@ -74,10 +75,16 @@ class SesionesController extends BaseController
 
         $registroUrl = site_url($sesion['dinamica_slug'] . '/registro/' . $sesion['token']);
 
+        $progresoEquipos = [];
+        if ($sesion['dinamica_slug'] === 'el-meridian' && !empty($sesion['iniciada_at'])) {
+            $progresoEquipos = (new RespuestaMomentoModel())->progresoPorEquipo((int) $sesion['id']);
+        }
+
         return view('sesiones/qr', [
-            'sesion'      => $sesion,
-            'registroUrl' => $registroUrl,
-            'count'       => (new ParticipantModel())->contarRegistrados((int) $sesion['id']),
+            'sesion'          => $sesion,
+            'registroUrl'     => $registroUrl,
+            'count'           => (new ParticipantModel())->contarRegistrados((int) $sesion['id']),
+            'progresoEquipos' => $progresoEquipos,
         ]);
     }
 
@@ -109,16 +116,41 @@ class SesionesController extends BaseController
             $mailer = new SendGridMailer();
             foreach ($asignados as $p) {
                 $rolUrl = site_url($sesion['dinamica_slug'] . '/rol/' . $p['token']);
-                $html = view('emails/rol', ['nombre' => $p['nombre'], 'rolUrl' => $rolUrl]);
+                $html = view('emails/rol', [
+                    'nombre'        => $p['nombre'],
+                    'rolUrl'        => $rolUrl,
+                    'dinamicaNombre' => $sesion['dinamica_nombre'],
+                ]);
                 $mailer->send(
                     [$p['email_corporativo'], $p['email_personal']],
-                    'Liderazgo y Comunicación — tu rol para el ejercicio de hoy',
+                    $sesion['dinamica_nombre'] . ' — tu rol para el ejercicio de hoy',
                     $html
                 );
             }
         }
 
         return redirect()->to('/sesiones/qr/' . $token . '?enviado=1');
+    }
+
+    /**
+     * Uso exclusivo del facilitador: si un equipo se quedó atascado porque
+     * alguien no respondió un momento (llegó tarde, se le dañó el celular),
+     * esto lo destraba sin esperar a esa persona.
+     */
+    public function forzarAvance(string $token)
+    {
+        $sesion = (new SesionModel())->findByToken($token);
+        if (!$sesion || $sesion['dinamica_slug'] !== 'el-meridian') {
+            return redirect()->to('/sesiones/qr/' . $token);
+        }
+
+        $team = (string) $this->request->getPost('team');
+        $momento = (int) $this->request->getPost('momento');
+        if ($team !== '' && $momento > 0) {
+            (new RespuestaMomentoModel())->forzarAvance((int) $sesion['id'], $team, $momento);
+        }
+
+        return redirect()->to('/sesiones/qr/' . $token);
     }
 
     public function cerrar(string $token)
