@@ -112,7 +112,7 @@ class SesionesController extends BaseController
                 $html = view('emails/rol', ['nombre' => $p['nombre'], 'rolUrl' => $rolUrl]);
                 $mailer->send(
                     [$p['email_corporativo'], $p['email_personal']],
-                    'Reto Ardurra — tu rol para el ejercicio de hoy',
+                    'Liderazgo y Comunicación — tu rol para el ejercicio de hoy',
                     $html
                 );
             }
@@ -151,7 +151,7 @@ class SesionesController extends BaseController
             'sesion'       => $sesion,
             'participants' => $participants,
             'byTeam'       => $byTeam,
-            'answers'      => ardurra_role_answers(),
+            'answers'      => liderazgo_comunicacion_role_answers(),
             'rolBaseUrl'   => site_url($sesion['dinamica_slug'] . '/rol/'),
         ]);
     }

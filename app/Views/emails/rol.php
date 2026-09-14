@@ -1,5 +1,5 @@
 <div style="font-family: system-ui, -apple-system, Arial, sans-serif; max-width: 480px; margin: 0 auto; color: #1b1f27;">
-    <h1 style="font-size: 20px;">Reto Ardurra</h1>
+    <h1 style="font-size: 20px;">Liderazgo y Comunicación</h1>
     <p>Hola <?= esc($nombre) ?>,</p>
     <p>El ejercicio está por comenzar. Haz clic en el siguiente botón para ver tu rol — es información confidencial, solo para ti.</p>
     <p style="text-align:center; margin: 24px 0;">

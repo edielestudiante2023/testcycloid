@@ -5,7 +5,7 @@ namespace App\Database\Seeds;
 use CodeIgniter\Database\Seeder;
 
 /**
- * Siembra la dinamica "ardurra" y el usuario administrador principal.
+ * Siembra la dinamica "liderazgo-comunicacion" y el usuario administrador principal.
  * Las credenciales del usuario semilla viven en un archivo NO versionado
  * (app/Config/SeedAdmin.local.php / .production.php).
  */
@@ -13,18 +13,18 @@ class AdminSeeder extends Seeder
 {
     public function run(): void
     {
-        $existing = $this->db->table('dinamicas')->where('slug', 'ardurra')->get()->getRow();
+        $existing = $this->db->table('dinamicas')->where('slug', 'liderazgo-comunicacion')->get()->getRow();
         if (!$existing) {
             $this->db->table('dinamicas')->insert([
-                'slug'        => 'ardurra',
-                'nombre'      => 'Reto Ardurra',
+                'slug'        => 'liderazgo-comunicacion',
+                'nombre'      => 'Liderazgo y Comunicación',
                 'descripcion' => 'Dinámica de coordinación bajo presión con roles secretos y entrega simulada a un cliente.',
                 'activa'      => 1,
                 'created_at'  => date('Y-m-d H:i:s'),
             ]);
-            echo "- dinamica 'ardurra' creada\n";
+            echo "- dinamica 'liderazgo-comunicacion' creada\n";
         } else {
-            echo "- dinamica 'ardurra' ya existe\n";
+            echo "- dinamica 'liderazgo-comunicacion' ya existe\n";
         }
 
         $seedFile = APPPATH . 'Config/SeedAdmin.' . ENVIRONMENT . '.php';

@@ -5,18 +5,18 @@ namespace App\Controllers;
 use App\Models\ParticipantModel;
 use App\Models\SesionModel;
 
-class ArdurraController extends BaseController
+class LiderazgoComunicacionController extends BaseController
 {
     public function registro(string $sesionToken)
     {
         $sesion = (new SesionModel())->findByToken($sesionToken);
-        if (!$sesion || $sesion['dinamica_slug'] !== 'ardurra') {
+        if (!$sesion || $sesion['dinamica_slug'] !== 'liderazgo-comunicacion') {
             return $this->response->setStatusCode(404)->setBody(
-                view('ardurra/enlace_invalido')
+                view('liderazgo-comunicacion/enlace_invalido')
             );
         }
 
-        return view('ardurra/registro', [
+        return view('liderazgo-comunicacion/registro', [
             'sesion' => $sesion,
             'sesionToken' => $sesionToken,
             'error'  => $this->request->getGet('error'),
@@ -28,11 +28,11 @@ class ArdurraController extends BaseController
         $sesionToken = (string) $this->request->getPost('s');
         $sesion = (new SesionModel())->findByToken($sesionToken);
 
-        if (!$sesion || $sesion['dinamica_slug'] !== 'ardurra') {
+        if (!$sesion || $sesion['dinamica_slug'] !== 'liderazgo-comunicacion') {
             return $this->response->setStatusCode(404)->setBody('Sesión no válida.');
         }
 
-        $redir = '/ardurra/registro/' . $sesionToken;
+        $redir = '/liderazgo-comunicacion/registro/' . $sesionToken;
 
         $nombre = trim((string) $this->request->getPost('nombre'));
         $documento = trim((string) $this->request->getPost('documento'));
@@ -67,24 +67,24 @@ class ArdurraController extends BaseController
             'autorizo_datos'         => 1,
         ]);
 
-        return redirect()->to('/ardurra/registrado/' . $sesionToken);
+        return redirect()->to('/liderazgo-comunicacion/registrado/' . $sesionToken);
     }
 
     public function registrado(string $sesionToken)
     {
         $sesion = (new SesionModel())->findByToken($sesionToken);
         if (!$sesion) {
-            return redirect()->to('/ardurra/registro/' . $sesionToken);
+            return redirect()->to('/liderazgo-comunicacion/registro/' . $sesionToken);
         }
 
-        return view('ardurra/registrado');
+        return view('liderazgo-comunicacion/registrado');
     }
 
     public function rol(string $participantToken)
     {
         $participant = (new ParticipantModel())->findByToken($participantToken);
-        $card = $participant && $participant['role'] ? (ardurra_role_cards()[$participant['role']] ?? null) : null;
+        $card = $participant && $participant['role'] ? (liderazgo_comunicacion_role_cards()[$participant['role']] ?? null) : null;
 
-        return view('ardurra/rol', ['participant' => $participant, 'card' => $card]);
+        return view('liderazgo-comunicacion/rol', ['participant' => $participant, 'card' => $card]);
     }
 }

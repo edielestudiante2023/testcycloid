@@ -22,9 +22,9 @@ $routes->group('sesiones', ['filter' => 'auth'], static function (RouteCollectio
     $routes->get('(:segment)', 'SesionesController::listar/$1');
 });
 
-$routes->group('ardurra', static function (RouteCollection $routes) {
-    $routes->get('registro/(:segment)', 'ArdurraController::registro/$1');
-    $routes->post('asignar', 'ArdurraController::asignar');
-    $routes->get('registrado/(:segment)', 'ArdurraController::registrado/$1');
-    $routes->get('rol/(:segment)', 'ArdurraController::rol/$1');
+$routes->group('liderazgo-comunicacion', static function (RouteCollection $routes) {
+    $routes->get('registro/(:segment)', 'LiderazgoComunicacionController::registro/$1');
+    $routes->post('asignar', 'LiderazgoComunicacionController::asignar');
+    $routes->get('registrado/(:segment)', 'LiderazgoComunicacionController::registrado/$1');
+    $routes->get('rol/(:segment)', 'LiderazgoComunicacionController::rol/$1');
 });

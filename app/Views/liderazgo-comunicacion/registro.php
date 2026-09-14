@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Registro — Reto Ardurra</title>
+<title>Registro — Liderazgo y Comunicación</title>
 <link rel="stylesheet" href="<?= base_url('assets/style.css?v=3') ?>">
 <link rel="icon" type="image/png" href="<?= base_url('assets/img/favicon.png?v=3') ?>">
 </head>
@@ -11,7 +11,7 @@
 <div class="wrap">
     <div class="brand-header"><img src="<?= base_url('assets/img/cycloid-logo-azul.png?v=3') ?>" alt="Cycloid Talent"></div>
     <div class="card">
-        <h1>Reto Ardurra</h1>
+        <h1>Liderazgo y Comunicación</h1>
         <p class="muted">Sesión: <?= esc($sesion['cliente']) ?></p>
         <p>Regístrate para participar. En unos minutos recibirás tu rol por correo, en tu email corporativo y personal.</p>
 
@@ -19,7 +19,7 @@
             <p style="color:#c0392b;"><?= esc($error) ?></p>
         <?php endif; ?>
 
-        <form method="post" action="<?= site_url('ardurra/asignar') ?>">
+        <form method="post" action="<?= site_url('liderazgo-comunicacion/asignar') ?>">
             <input type="hidden" name="s" value="<?= esc($sesionToken) ?>">
 
             <label for="nombre">Nombre completo</label>

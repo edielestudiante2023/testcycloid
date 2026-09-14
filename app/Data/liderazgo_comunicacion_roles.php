@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 /**
- * Contenido de las tarjetas secretas del Reto Ardurra.
+ * Contenido de las tarjetas secretas de la dinámica Liderazgo y Comunicación.
  * @return array<string, array{title: string, body: string}>
  */
 return [

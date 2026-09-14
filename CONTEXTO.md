@@ -8,9 +8,11 @@ Sitio interno de Cycloid Talent para correr dinámicas de capacitación (lideraz
 con múltiples clientes en paralelo, sin que se mezclen resultados entre ellos. Vive en producción en
 **https://test.cycloidtalent.com/**.
 
-Primera dinámica implementada: **Reto Ardurra** (coordinación bajo presión, roles secretos A–E,
-entrega simulada a un cliente ficticio, con un giro a mitad del ejercicio y debrief sobre
-"liderazgo sin cargo").
+Primera dinámica implementada: **Liderazgo y Comunicación** (coordinación bajo presión, roles
+secretos A–E, entrega simulada a un cliente ficticio, con un giro a mitad del ejercicio y debrief
+sobre "liderazgo sin cargo"). Slug: `liderazgo-comunicacion`. **"Ardurra" es el nombre de un
+cliente** (un valor más en la columna `cliente` de `sesiones`), no el nombre de la dinámica — ver
+nota en "Decisiones y hallazgos".
 
 ## Stack
 
@@ -62,13 +64,13 @@ entrega simulada a un cliente ficticio, con un giro a mitad del ejercicio y debr
 ## Estructura relevante
 
 ```
-app/Controllers/   AuthController, DashboardController, SesionesController, ArdurraController
+app/Controllers/   AuthController, DashboardController, SesionesController, LiderazgoComunicacionController
 app/Models/         UsuarioModel, DinamicaModel, SesionModel, ParticipantModel
 app/Filters/        AuthFilter (protege dashboard + /sesiones/*)
 app/Libraries/      SendGridMailer (API directa por cURL, sin SDK de Composer)
 app/Database/       Migrations/ y Seeds/AdminSeeder.php
-app/Data/           ardurra_roles.php, ardurra_answers.php (contenido de las 5 tarjetas + debrief)
-app/Views/          auth/, dashboard/, sesiones/, ardurra/, emails/
+app/Data/           liderazgo_comunicacion_roles.php, liderazgo_comunicacion_answers.php (contenido de las 5 tarjetas + debrief)
+app/Views/          auth/, dashboard/, sesiones/, liderazgo-comunicacion/, emails/
 public/assets/      logo y favicon de Cycloid Talent, style.css compartido
 ```
 
@@ -122,6 +124,13 @@ chown -R www:www /www/wwwroot/test
   versión en el query string (`?v=3` → `?v=4`) en vez de esperar a que expire la caché.
 - Existe un repo de GitHub llamado `test` (distinto de `testcycloid`, que es este) que pertenece a
   un proyecto viejo de otro cliente (Technoliner) — no tocar, no tiene relación con esto.
+- La dinámica se llamó originalmente "Reto Ardurra" en slug, controlador (`ArdurraController`),
+  rutas (`/ardurra/...`), vistas (`app/Views/ardurra/`), helper y asunto del email — pero Ardurra
+  es el nombre de un **cliente**, no de la dinámica. Se corrigió todo a
+  `liderazgo-comunicacion` / `LiderazgoComunicacionController` / "Liderazgo y Comunicación"
+  (migración `2026-09-14-150005_RenameArdurraToLiderazgoComunicacion` actualiza el slug/nombre
+  existente en `dinamicas`). Si aparece "Ardurra" en el código de aquí en adelante, debe ser
+  únicamente como valor de la columna `cliente` en `sesiones`.
 
 ## Pendiente / conversación abierta
 
