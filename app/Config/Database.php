@@ -19,17 +19,6 @@ class Database extends Config
      */
     public string $defaultGroup = 'default';
 
-    public function __construct()
-    {
-        parent::__construct();
-
-        // La base de datos gestionada (DigitalOcean) exige conexion cifrada.
-        // Solo se activa en produccion: el MySQL local no tiene SSL configurado.
-        if (ENVIRONMENT === 'production') {
-            $this->default['encrypt'] = ['ssl_verify' => false];
-        }
-    }
-
     /**
      * The default database connection.
      *
@@ -210,6 +199,12 @@ class Database extends Config
         // we don't overwrite live data on accident.
         if (ENVIRONMENT === 'testing') {
             $this->defaultGroup = 'tests';
+        }
+
+        // La base de datos gestionada (DigitalOcean) exige conexion cifrada.
+        // Solo se activa en produccion: el MySQL local no tiene SSL configurado.
+        if (ENVIRONMENT === 'production') {
+            $this->default['encrypt'] = ['ssl_verify' => false];
         }
     }
 }
