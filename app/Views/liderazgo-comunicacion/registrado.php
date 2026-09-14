@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Registro recibido — Liderazgo y Comunicación</title>
-<link rel="stylesheet" href="<?= base_url('assets/style.css?v=3') ?>">
+<link rel="stylesheet" href="<?= base_url('assets/style.css?v=4') ?>">
 <link rel="icon" type="image/png" href="<?= base_url('assets/img/favicon.png?v=3') ?>">
 </head>
 <body>

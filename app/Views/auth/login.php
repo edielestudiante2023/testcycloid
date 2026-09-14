@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Ingresar — Dinámicas de Capacitación Virtual</title>
-<link rel="stylesheet" href="<?= base_url('assets/style.css?v=3') ?>">
+<link rel="stylesheet" href="<?= base_url('assets/style.css?v=4') ?>">
 <link rel="icon" type="image/png" href="<?= base_url('assets/img/favicon.png?v=3') ?>">
 
 <!-- PWA -->
@@ -20,12 +20,17 @@
     <div class="brand-header"><img src="<?= base_url('assets/img/cycloid-logo-azul.png?v=3') ?>" alt="Cycloid Talent"></div>
     <div class="card">
         <h1>Ingresar</h1>
+        <?php if (!empty($mensaje)): ?><p style="color:#1a7f37;"><?= esc($mensaje) ?></p><?php endif; ?>
         <?php if (!empty($error)): ?><p style="color:#c0392b;"><?= esc($error) ?></p><?php endif; ?>
         <form method="post" action="<?= site_url('login') ?>">
             <label for="email">Correo</label>
             <input type="email" id="email" name="email" required autocomplete="username">
             <label for="password">Contraseña</label>
-            <input type="password" id="password" name="password" required autocomplete="current-password">
+            <div class="password-field">
+                <input type="password" id="password" name="password" required autocomplete="current-password">
+                <button type="button" class="password-toggle" data-target="password" aria-label="Mostrar contraseña">👁</button>
+            </div>
+            <p style="margin: 8px 0 0;"><a href="<?= site_url('login/olvide') ?>" class="muted">¿Olvidaste tu contraseña?</a></p>
             <button type="submit">Entrar</button>
         </form>
 
@@ -55,6 +60,17 @@
     </div>
 </div>
 
+<script>
+document.querySelectorAll('.password-toggle').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+        var input = document.getElementById(btn.dataset.target);
+        var showing = input.type === 'text';
+        input.type = showing ? 'password' : 'text';
+        btn.setAttribute('aria-label', showing ? 'Mostrar contraseña' : 'Ocultar contraseña');
+        btn.classList.toggle('is-visible', !showing);
+    });
+});
+</script>
 <script>
 (function() {
     var deferredPrompt = null;

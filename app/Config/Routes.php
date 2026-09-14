@@ -7,6 +7,10 @@ use CodeIgniter\Router\RouteCollection;
 $routes->get('login', 'AuthController::showLogin');
 $routes->post('login', 'AuthController::login');
 $routes->get('logout', 'AuthController::logout');
+$routes->get('login/olvide', 'AuthController::forgotPassword');
+$routes->post('login/olvide', 'AuthController::sendResetLink');
+$routes->get('login/restablecer/(:segment)', 'AuthController::resetPassword/$1');
+$routes->post('login/restablecer/(:segment)', 'AuthController::updatePassword/$1');
 
 $routes->get('/', 'DashboardController::index', ['filter' => 'auth']);
 

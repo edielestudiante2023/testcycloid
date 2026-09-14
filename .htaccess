@@ -1,0 +1,11 @@
+# Permite acceder al proyecto como http://localhost/test/ en XAMPP,
+# reenviando todo hacia public/ (el front controller real de CodeIgniter).
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Si ya viene de public/, no reescribir de nuevo (evita loop de redirección)
+    RewriteRule ^public/ - [L]
+
+    # Todo lo demás se sirve desde public/
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>
