@@ -54,7 +54,7 @@
             </form>
         </div>
         <script>
-        var inicio = new Date(<?= json_encode(str_replace(' ', 'T', $sesion['iniciada_at'])) ?>).getTime();
+        var inicio = new Date(<?= json_encode(str_replace(' ', 'T', $sesion['iniciada_at']) . 'Z') ?>).getTime();
         var duracionMs = <?= (int) $sesion['duracion_min'] ?> * 60 * 1000;
         var el = document.getElementById('cronometro');
         function tick() {

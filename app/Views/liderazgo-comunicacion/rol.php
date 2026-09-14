@@ -16,6 +16,15 @@
             <p>Este enlace de rol no existe o el ejercicio todavía no ha iniciado.</p>
         <?php else: ?>
             <p class="muted"><?= esc($participant['nombre']) ?> · <?= esc($participant['team']) ?></p>
+
+            <div class="confidential" style="background:#EEF2FB; border-style:solid; margin-bottom:20px;">
+                Su equipo debe coordinar la entrega de hoy al cliente. Cada uno de ustedes tiene información
+                parcial y confidencial — nadie tiene el panorama completo. Hablen entre ustedes (sin mostrarse
+                la pantalla) para decidir qué se entrega, en qué versión, y quién será el único punto de
+                contacto con el cliente.<?php if (!empty($sesion['duracion_min'])): ?> Tienen
+                <strong><?= (int) $sesion['duracion_min'] ?> minutos</strong> desde que recibieron este correo.<?php endif; ?>
+            </div>
+
             <h1><?= esc($card['title']) ?></h1>
             <p class="confidential"><?= esc($card['body']) ?></p>
             <p class="muted">No muestres esta pantalla a tu equipo. Solo tú tienes esta información.</p>

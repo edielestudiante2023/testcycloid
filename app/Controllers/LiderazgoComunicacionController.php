@@ -84,7 +84,8 @@ class LiderazgoComunicacionController extends BaseController
     {
         $participant = (new ParticipantModel())->findByToken($participantToken);
         $card = $participant && $participant['role'] ? (liderazgo_comunicacion_role_cards()[$participant['role']] ?? null) : null;
+        $sesion = $participant ? (new SesionModel())->find((int) $participant['sesion_id']) : null;
 
-        return view('liderazgo-comunicacion/rol', ['participant' => $participant, 'card' => $card]);
+        return view('liderazgo-comunicacion/rol', ['participant' => $participant, 'card' => $card, 'sesion' => $sesion]);
     }
 }
