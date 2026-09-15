@@ -14,6 +14,19 @@ class RespuestaMomentoModel extends Model
     protected $returnType    = 'array';
 
     /**
+     * Qué opciones del último momento de cada rol reflejan que la persona
+     * sintió que su opinión sí llegó con claridad a la decisión final.
+     * Es solo para el resumen del debrief — no afecta el ejercicio en sí.
+     */
+    private const POLARIDAD_MOMENTO_FINAL = [
+        'A' => ['bastante' => true, 'poco' => false, 'casi_nada' => false],
+        'B' => ['si_claro' => true, 'parcial' => false, 'no' => false],
+        'C' => ['claro' => true, 'suave' => false, 'no_dichas' => false],
+        'D' => ['si' => true, 'parcial' => false, 'no' => false],
+        'E' => ['hablo_claridad' => true, 'opiniones_pequenas' => false, 'silencio_decidio' => false],
+    ];
+
+    /**
      * Guarda la respuesta de un participante a un momento. Si ya existía
      * (reintento, doble clic), no la sobrescribe — la primera respuesta manda.
      */
@@ -107,6 +120,102 @@ class RespuestaMomentoModel extends Model
 
         usort($progreso, static fn ($a, $b) => strnatcmp($a['team'], $b['team']));
         return $progreso;
+    }
+
+    /**
+     * Resultados completos para el debrief: por equipo, el desglose de
+     * respuestas de cada momento (cuántos eligieron cada opción) y un
+     * resumen de si las opiniones individuales llegaron claras al final.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function resultadosPorEquipo(int $sesionId): array
+    {
+        helper('el_meridian');
+        $momentosDefinidos = el_meridian_momentos();
+
+        $participantModel = new ParticipantModel();
+        $miembros = $participantModel->where('sesion_id', $sesionId)->where('team IS NOT NULL')->findAll();
+
+        $porEquipo = [];
+        foreach ($miembros as $miembro) {
+            $porEquipo[$miembro['team']][] = $miembro;
+        }
+
+        $resultado = [];
+        foreach ($porEquipo as $team => $integrantes) {
+            $totalMomentos = 0;
+            foreach ($integrantes as $integrante) {
+                $totalMomentos = max($totalMomentos, count($momentosDefinidos[$integrante['role']]['momentos'] ?? []));
+            }
+
+            $momentosData = [];
+            for ($momento = 1; $momento <= $totalMomentos; $momento++) {
+                $porRespuesta = [];
+                foreach ($integrantes as $integrante) {
+                    $respuesta = $this->respuestaDe((int) $integrante['id'], $momento);
+                    if (!$respuesta || $respuesta['respuesta'] === 'sin_respuesta') {
+                        continue;
+                    }
+                    $definicion = $momentosDefinidos[$integrante['role']]['momentos'][$momento] ?? null;
+                    $etiqueta = $definicion['opciones'][$respuesta['respuesta']] ?? $respuesta['respuesta'];
+                    $clave = $integrante['role'] . ':' . $respuesta['respuesta'];
+                    if (!isset($porRespuesta[$clave])) {
+                        $porRespuesta[$clave] = ['etiqueta' => $etiqueta, 'rol' => $integrante['role'], 'count' => 0];
+                    }
+                    $porRespuesta[$clave]['count']++;
+                }
+                $momentosData[$momento] = array_values($porRespuesta);
+            }
+
+            $positivos = 0;
+            $totalConDato = 0;
+            foreach ($integrantes as $integrante) {
+                $respuesta = $this->respuestaDe((int) $integrante['id'], $totalMomentos);
+                if (!$respuesta || $respuesta['respuesta'] === 'sin_respuesta') {
+                    continue;
+                }
+                $mapa = self::POLARIDAD_MOMENTO_FINAL[$integrante['role']] ?? null;
+                if ($mapa === null || !array_key_exists($respuesta['respuesta'], $mapa)) {
+                    continue;
+                }
+                $totalConDato++;
+                if ($mapa[$respuesta['respuesta']]) {
+                    $positivos++;
+                }
+            }
+
+            $resultado[] = [
+                'team'          => $team,
+                'totalEquipo'   => count($integrantes),
+                'totalMomentos' => $totalMomentos,
+                'momentos'      => $momentosData,
+                'positivos'     => $positivos,
+                'totalConDato'  => $totalConDato,
+                'resumenTexto'  => $this->resumenTexto($positivos, $totalConDato),
+            ];
+        }
+
+        usort($resultado, static fn ($a, $b) => strnatcmp($a['team'], $b['team']));
+        return $resultado;
+    }
+
+    private function resumenTexto(int $positivos, int $total): string
+    {
+        if ($total === 0) {
+            return 'Todavía no hay suficientes respuestas para sacar una conclusión.';
+        }
+
+        $ratio = $positivos / $total;
+        if ($ratio >= 0.75) {
+            return 'La mayoría sintió que su opinión sí se reflejó en la decisión final del equipo.';
+        }
+
+        if ($ratio >= 0.4) {
+            return 'A medias: algunas opiniones llegaron a la decisión final, otras se quedaron en el camino.';
+        }
+
+        return 'La mayoría sintió que su opinión NO llegó a influir en la decisión final — señal de que hablar no es lo mismo que ser escuchado.';
     }
 
     /**

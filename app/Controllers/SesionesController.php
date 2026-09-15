@@ -165,9 +165,38 @@ class SesionesController extends BaseController
                 'estado' => 'cerrada',
                 'cerrada_at' => date('Y-m-d H:i:s'),
             ]);
+
+            if ($sesion['dinamica_slug'] === 'el-meridian') {
+                $this->enviarResumenElMeridian($sesion);
+            }
         }
 
         return redirect()->to('/sesiones/resultados/' . $token);
+    }
+
+    private function enviarResumenElMeridian(array $sesion): void
+    {
+        $destino = session('usuario_email');
+        if (!$destino) {
+            return;
+        }
+
+        $equipos = (new RespuestaMomentoModel())->resultadosPorEquipo((int) $sesion['id']);
+        if (empty($equipos)) {
+            return;
+        }
+
+        $html = view('emails/el_meridian_resumen', [
+            'sesion' => $sesion,
+            'equipos' => $equipos,
+            'resultadosUrl' => site_url('sesiones/resultados/' . $sesion['token']),
+        ]);
+
+        (new SendGridMailer())->send(
+            [$destino],
+            'El Meridián — resumen de "' . $sesion['cliente'] . '"',
+            $html
+        );
     }
 
     public function resultados(string $token)
@@ -175,6 +204,13 @@ class SesionesController extends BaseController
         $sesion = (new SesionModel())->findByToken($token);
         if (!$sesion) {
             return redirect()->to('/');
+        }
+
+        if ($sesion['dinamica_slug'] === 'el-meridian') {
+            return view('el-meridian/resultados', [
+                'sesion' => $sesion,
+                'equipos' => (new RespuestaMomentoModel())->resultadosPorEquipo((int) $sesion['id']),
+            ]);
         }
 
         $participants = (new ParticipantModel())->porSesion((int) $sesion['id']);
