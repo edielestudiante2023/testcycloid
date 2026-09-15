@@ -5,6 +5,22 @@
     <?php foreach ($equipos as $eq): ?>
         <div style="margin: 20px 0; padding: 16px; background: #f8fafc; border-radius: 8px;">
             <p style="margin: 0 0 6px; font-weight: 700;"><?= esc($eq['team']) ?></p>
+
+            <?php if (!empty($eq['radiografia']['dimensiones'])): ?>
+            <table style="width:100%; border-collapse:collapse; margin-bottom:12px; font-size:13px;">
+                <?php foreach ($eq['radiografia']['dimensiones'] as $dimension => $nivel): ?>
+                    <tr>
+                        <td style="padding:3px 0; color:#5b6472;"><?= esc($dimension) ?></td>
+                        <td style="padding:3px 0; text-align:right; font-weight:600;"><?= esc($nivel) ?></td>
+                    </tr>
+                <?php endforeach; ?>
+                <tr>
+                    <td style="padding:3px 0; color:#5b6472;">Percepción de haber sido escuchado</td>
+                    <td style="padding:3px 0; text-align:right; font-weight:600;"><?= esc($eq['radiografia']['escuchados']) ?></td>
+                </tr>
+            </table>
+            <?php endif; ?>
+
             <p style="margin: 0 0 6px; font-size: 14px;">
                 <?= (int) $eq['positivos'] ?> de <?= (int) $eq['totalConDato'] ?> sintieron que su opinión llegó con claridad a la decisión final.
             </p>

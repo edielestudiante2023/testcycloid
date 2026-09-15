@@ -184,12 +184,17 @@ class SesionesController extends BaseController
      */
     private function generarAnalisisElMeridian(int $sesionId): array
     {
-        $porEquipo = (new RespuestaMomentoModel())->respuestasPorPersona($sesionId);
-        $kimi = new KimiAnalisis();
+        $respuestaModel = new RespuestaMomentoModel();
+        $porEquipo = $respuestaModel->respuestasPorPersona($sesionId);
+        $radiografiaPorEquipo = [];
+        foreach ($respuestaModel->radiografiaPorEquipo($sesionId) as $r) {
+            $radiografiaPorEquipo[$r['team']] = $r;
+        }
 
+        $kimi = new KimiAnalisis();
         $analisis = [];
         foreach ($porEquipo as $equipo) {
-            $analisis[$equipo['team']] = $kimi->analizarEquipo($equipo);
+            $analisis[$equipo['team']] = $kimi->analizarEquipo($equipo, $radiografiaPorEquipo[$equipo['team']] ?? []);
         }
 
         return $analisis;
@@ -202,13 +207,20 @@ class SesionesController extends BaseController
             return;
         }
 
-        $equipos = (new RespuestaMomentoModel())->resultadosPorEquipo((int) $sesion['id']);
+        $respuestaModel = new RespuestaMomentoModel();
+        $equipos = $respuestaModel->resultadosPorEquipo((int) $sesion['id']);
         if (empty($equipos)) {
             return;
         }
 
+        $radiografiaPorEquipo = [];
+        foreach ($respuestaModel->radiografiaPorEquipo((int) $sesion['id']) as $r) {
+            $radiografiaPorEquipo[$r['team']] = $r;
+        }
+
         foreach ($equipos as &$eq) {
             $eq['analisisIa'] = $analisisPorEquipo[$eq['team']] ?? null;
+            $eq['radiografia'] = $radiografiaPorEquipo[$eq['team']] ?? null;
         }
         unset($eq);
 
@@ -233,10 +245,18 @@ class SesionesController extends BaseController
         }
 
         if ($sesion['dinamica_slug'] === 'el-meridian') {
-            $equipos = (new RespuestaMomentoModel())->resultadosPorEquipo((int) $sesion['id']);
+            $respuestaModel = new RespuestaMomentoModel();
+            $equipos = $respuestaModel->resultadosPorEquipo((int) $sesion['id']);
             $analisisPorEquipo = json_decode((string) ($sesion['analisis_ia'] ?? ''), true) ?? [];
+
+            $radiografiaPorEquipo = [];
+            foreach ($respuestaModel->radiografiaPorEquipo((int) $sesion['id']) as $r) {
+                $radiografiaPorEquipo[$r['team']] = $r;
+            }
+
             foreach ($equipos as &$eq) {
                 $eq['analisisIa'] = $analisisPorEquipo[$eq['team']] ?? null;
+                $eq['radiografia'] = $radiografiaPorEquipo[$eq['team']] ?? null;
             }
             unset($eq);
 

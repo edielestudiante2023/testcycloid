@@ -253,6 +253,110 @@ class RespuestaMomentoModel extends Model
         return $resultado;
     }
 
+    /**
+     * Radiografía del equipo: 6 dimensiones calculadas matemáticamente a
+     * partir de las opciones que cada quien eligió — nada estimado a ojo.
+     * Las primeras 4 salen directo del promedio de puntajes del momento
+     * correspondiente (ver ElMeridianDimensiones); "Persistencia ante
+     * presión" compara el promedio del momento 3 contra el 4 (el punto de
+     * quiebre); "Percepción de haber sido escuchado" reutiliza el mismo
+     * cálculo que ya usa resultadosPorEquipo().
+     *
+     * @return array<int, array{team: string, dimensiones: array<string, string>, escuchados: string}>
+     */
+    public function radiografiaPorEquipo(int $sesionId): array
+    {
+        $porPersona = $this->respuestasPorPersonaConValores($sesionId);
+
+        $resultado = [];
+        foreach ($porPersona as $team => $integrantes) {
+            $promedios = [1 => [], 2 => [], 3 => [], 4 => []];
+            foreach ($integrantes as $integrante) {
+                foreach ($integrante['valores'] as $momento => $valor) {
+                    if ($momento > 4) {
+                        continue;
+                    }
+                    $puntaje = ElMeridianDimensiones::puntaje($momento, $integrante['role'], $valor);
+                    if ($puntaje !== null) {
+                        $promedios[$momento][] = $puntaje;
+                    }
+                }
+            }
+
+            $promedio = static fn (array $p) => empty($p) ? null : array_sum($p) / count($p);
+            $p1 = $promedio($promedios[1]);
+            $p2 = $promedio($promedios[2]);
+            $p3 = $promedio($promedios[3]);
+            $p4 = $promedio($promedios[4]);
+
+            $dimensiones = [
+                ElMeridianDimensiones::NOMBRES_DIMENSION[1] => $p1 === null ? '—' : ElMeridianDimensiones::nivel($p1),
+                ElMeridianDimensiones::NOMBRES_DIMENSION[2] => $p2 === null ? '—' : ElMeridianDimensiones::nivel($p2),
+                ElMeridianDimensiones::NOMBRES_DIMENSION[3] => $p3 === null ? '—' : ElMeridianDimensiones::nivel($p3),
+                ElMeridianDimensiones::NOMBRES_DIMENSION[4] => $p4 === null ? '—' : ElMeridianDimensiones::nivel($p4),
+                'Persistencia ante presión' => ($p3 === null || $p4 === null)
+                    ? '—'
+                    : ElMeridianDimensiones::nivel($p4 - $p3 + 1),
+            ];
+
+            $positivos = 0;
+            $totalConDato = 0;
+            foreach ($integrantes as $integrante) {
+                $valorFinal = $integrante['valores'][5] ?? null;
+                $mapa = self::POLARIDAD_MOMENTO_FINAL[$integrante['role']] ?? null;
+                if ($valorFinal === null || $mapa === null || !array_key_exists($valorFinal, $mapa)) {
+                    continue;
+                }
+                $totalConDato++;
+                if ($mapa[$valorFinal]) {
+                    $positivos++;
+                }
+            }
+
+            $resultado[] = [
+                'team'        => $team,
+                'dimensiones' => $dimensiones,
+                'escuchados'  => $totalConDato === 0 ? '—' : "{$positivos}/{$totalConDato}",
+            ];
+        }
+
+        usort($resultado, static fn ($a, $b) => strnatcmp($a['team'], $b['team']));
+        return $resultado;
+    }
+
+    /**
+     * Igual que respuestasPorPersona() pero conserva el valor crudo de cada
+     * opción (no la etiqueta) — lo necesita radiografiaPorEquipo() para
+     * buscar el puntaje en ElMeridianDimensiones.
+     *
+     * @return array<string, array<int, array{nombre: string, role: string, valores: array<int, string>}>>
+     */
+    private function respuestasPorPersonaConValores(int $sesionId): array
+    {
+        $participantModel = new ParticipantModel();
+        $miembros = $participantModel->where('sesion_id', $sesionId)->where('team IS NOT NULL')->findAll();
+
+        $porEquipo = [];
+        foreach ($miembros as $miembro) {
+            $valores = [];
+            for ($momento = 1; $momento <= 5; $momento++) {
+                $respuesta = $this->respuestaDe((int) $miembro['id'], $momento);
+                if ($respuesta && $respuesta['respuesta'] !== 'sin_respuesta') {
+                    $valores[$momento] = $respuesta['respuesta'];
+                }
+            }
+            if (!empty($valores)) {
+                $porEquipo[$miembro['team']][] = [
+                    'nombre' => $miembro['nombre'],
+                    'role'   => $miembro['role'],
+                    'valores' => $valores,
+                ];
+            }
+        }
+
+        return $porEquipo;
+    }
+
     private function resumenTexto(int $positivos, int $total): string
     {
         if ($total === 0) {

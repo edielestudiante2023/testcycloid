@@ -28,6 +28,18 @@
         <div class="card">
             <h2><?= esc($eq['team']) ?></h2>
 
+            <?php if (!empty($eq['radiografia']['dimensiones'])): ?>
+            <table style="margin-bottom:20px;">
+                <thead><tr><th>Dimensión</th><th>Nivel</th></tr></thead>
+                <tbody>
+                <?php foreach ($eq['radiografia']['dimensiones'] as $dimension => $nivel): ?>
+                    <tr><td><?= esc($dimension) ?></td><td><span class="role-badge"><?= esc($nivel) ?></span></td></tr>
+                <?php endforeach; ?>
+                    <tr><td>Percepción de haber sido escuchado</td><td><span class="role-badge"><?= esc($eq['radiografia']['escuchados']) ?></span></td></tr>
+                </tbody>
+            </table>
+            <?php endif; ?>
+
             <div class="answer-box" style="margin-bottom:20px;">
                 <p style="margin:0 0 6px; font-weight:700;">
                     <?= (int) $eq['positivos'] ?> de <?= (int) $eq['totalConDato'] ?> sintieron que su opinión llegó con claridad a la decisión final
