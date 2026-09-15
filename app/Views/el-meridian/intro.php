@@ -9,7 +9,7 @@
 </head>
 <body>
 <div class="wrap">
-    <div class="brand-header"><img src="<?= base_url('assets/img/cycloid-logo-azul.png?v=3') ?>" alt="Cycloid Talent"></div>
+    <img src="<?= base_url('assets/img/el-meridian-hero.jpg') ?>" alt="El Meridián — Distintas miradas, una decisión" style="width:100%; height:auto; border-radius:12px; margin-bottom:16px; display:block;">
     <div class="card">
         <h1>El Meridián</h1>
 
