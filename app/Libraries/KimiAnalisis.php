@@ -21,8 +21,21 @@ class KimiAnalisis
         . 'grupo, y que le sugieres al facilitador para abrir el debrief. Se especifico, cita los momentos '
         . 'concretos y los nombres reales que te den. NO hagas diagnostico psicologico clinico ni etiquetes '
         . 'a nadie con rasgos de personalidad — describe comportamientos observados en este ejercicio '
-        . 'puntual, no quien es la persona. Maximo 220 palabras en tu respuesta final. Responde en espanol, '
+        . 'puntual, no quien es la persona. Responde en TEXTO PLANO, sin Markdown: nada de "##", "**", "-", '
+        . 'listas ni encabezados. Usa parrafos separados por un salto de linea en blanco, como si '
+        . 'escribieras un correo. IMPORTANTE: nunca uses abreviaturas tipo "M1", "M2", "M3" para referirte '
+        . 'a las etapas — eso es jerga interna que nadie mas entiende. En vez de eso describe la etapa con '
+        . 'palabras, usando el nombre que te dieron para cada una (ej: "al principio", "cuando le preguntaron '
+        . 'directamente al cerrar"). Maximo 220 palabras en tu respuesta final. Responde en espanol, '
         . 'tono profesional pero cercano.';
+
+    private const NOMBRES_ETAPA = [
+        1 => 'Al principio, con la primera información',
+        2 => 'Después de hablar con el equipo por primera vez',
+        3 => 'Cuando la situación empeoró',
+        4 => 'Bajo presión, cerca del cierre',
+        5 => 'Al final, en retrospectiva',
+    ];
 
     /**
      * @param array{team: string, personas: array<int, array{nombre: string, rol: string, momentos: array<int, string>}>} $equipo
@@ -81,7 +94,8 @@ class KimiAnalisis
         foreach ($equipo['personas'] as $persona) {
             $lineas[] = $persona['nombre'] . ' (' . $persona['rol'] . '):';
             foreach ($persona['momentos'] as $numMomento => $etiqueta) {
-                $lineas[] = 'M' . $numMomento . ': ' . $etiqueta;
+                $nombreEtapa = self::NOMBRES_ETAPA[$numMomento] ?? ('Etapa ' . $numMomento);
+                $lineas[] = '- ' . $nombreEtapa . ': ' . $etiqueta;
             }
             $lineas[] = '';
         }

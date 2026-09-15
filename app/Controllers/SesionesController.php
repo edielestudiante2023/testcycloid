@@ -86,6 +86,7 @@ class SesionesController extends BaseController
             'registroUrl'     => $registroUrl,
             'count'           => (new ParticipantModel())->contarRegistrados((int) $sesion['id']),
             'progresoEquipos' => $progresoEquipos,
+            'participants'    => (new ParticipantModel())->porSesion((int) $sesion['id']),
         ]);
     }
 

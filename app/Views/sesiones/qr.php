@@ -7,6 +7,9 @@
 <link rel="stylesheet" href="<?= base_url('assets/style.css?v=4') ?>">
 <link rel="icon" type="image/png" href="<?= base_url('assets/img/favicon.png?v=3') ?>">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/datatables/1.13.11/css/jquery.dataTables.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/datatables/1.13.11/js/jquery.dataTables.min.js"></script>
 </head>
 <body>
 <div class="wrap">
@@ -43,6 +46,12 @@
         document.getElementById('btnActualizar').addEventListener('click', actualizarContador);
         setInterval(actualizarContador, 5000);
         </script>
+    <?php elseif ($sesion['estado'] === 'cerrada'): ?>
+        <div class="card">
+            <h2>Ejercicio cerrado</h2>
+            <p class="muted">Este ejercicio ya se cerró<?= !empty($sesion['cerrada_at']) ? ' el ' . esc(substr($sesion['cerrada_at'], 0, 16)) : '' ?>. No se puede volver a enviar ni a cerrar.</p>
+            <a class="btn" href="<?= site_url('sesiones/resultados/' . $sesion['token']) ?>">Ver resultados</a>
+        </div>
     <?php else: ?>
         <div class="card">
             <h2>Ejercicio en curso</h2>
@@ -53,6 +62,21 @@
                 <button type="submit" class="btn-danger">Cerrar ejercicio</button>
             </form>
         </div>
+        <script>
+        var inicio = new Date(<?= json_encode(str_replace(' ', 'T', $sesion['iniciada_at']) . 'Z') ?>).getTime();
+        var duracionMs = <?= (int) $sesion['duracion_min'] ?> * 60 * 1000;
+        var el = document.getElementById('cronometro');
+        function tick() {
+            var restante = Math.round((inicio + duracionMs - Date.now()) / 1000);
+            var signo = restante < 0 ? '-' : '';
+            restante = Math.abs(restante);
+            var m = Math.floor(restante / 60);
+            var s = restante % 60;
+            el.textContent = signo + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+        }
+        tick();
+        setInterval(tick, 1000);
+        </script>
 
         <?php if (!empty($progresoEquipos)): ?>
         <div class="card">
@@ -82,22 +106,42 @@
         </div>
         <script>setInterval(function () { window.location.reload(); }, 8000);</script>
         <?php endif; ?>
+    <?php endif; ?>
 
-        <script>
-        var inicio = new Date(<?= json_encode(str_replace(' ', 'T', $sesion['iniciada_at']) . 'Z') ?>).getTime();
-        var duracionMs = <?= (int) $sesion['duracion_min'] ?> * 60 * 1000;
-        var el = document.getElementById('cronometro');
-        function tick() {
-            var restante = Math.round((inicio + duracionMs - Date.now()) / 1000);
-            var signo = restante < 0 ? '-' : '';
-            restante = Math.abs(restante);
-            var m = Math.floor(restante / 60);
-            var s = restante % 60;
-            el.textContent = signo + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
-        }
-        tick();
-        setInterval(tick, 1000);
-        </script>
+    <?php if (!empty($participants)): ?>
+    <div class="card">
+        <h2>Participantes registrados</h2>
+        <table id="tablaParticipantes" class="display" style="width:100%;">
+            <thead>
+                <tr><th>Nombre</th><th>Documento</th><th>Cargo</th><th>Equipo</th><th>Rol</th></tr>
+            </thead>
+            <tbody>
+            <?php foreach ($participants as $p): ?>
+                <tr>
+                    <td><?= esc($p['nombre']) ?></td>
+                    <td><?= esc($p['documento']) ?></td>
+                    <td><?= esc($p['cargo']) ?></td>
+                    <td><?= esc($p['team'] ?? 'Sin asignar') ?></td>
+                    <td><?= esc($p['role'] ?? '—') ?></td>
+                </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+    <script>
+    $(document).ready(function () {
+        $('#tablaParticipantes').DataTable({
+            language: {
+                search: 'Buscar:',
+                lengthMenu: 'Mostrar _MENU_ participantes',
+                info: 'Mostrando _START_ a _END_ de _TOTAL_',
+                paginate: { previous: 'Anterior', next: 'Siguiente' },
+                zeroRecords: 'Sin resultados',
+                emptyTable: 'Todavía no hay participantes registrados'
+            }
+        });
+    });
+    </script>
     <?php endif; ?>
 </div>
 <script>
