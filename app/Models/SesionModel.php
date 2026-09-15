@@ -10,7 +10,7 @@ class SesionModel extends Model
     protected $primaryKey    = 'id';
     protected $allowedFields = [
         'dinamica_id', 'usuario_id', 'cliente', 'token', 'estado',
-        'team_size', 'duracion_min', 'iniciada_at', 'cerrada_at',
+        'team_size', 'duracion_min', 'iniciada_at', 'cerrada_at', 'analisis_ia',
     ];
     protected $useTimestamps = true;
     protected $returnType    = 'array';

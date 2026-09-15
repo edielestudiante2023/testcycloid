@@ -46,6 +46,7 @@ $RECYCLE.BIN/
 Vagrantfile
 app/Config/SeedAdmin.*.php
 app/Config/Mail.*.php
+app/Config/Kimi.*.php
 
 #-------------------------
 # Temporary Files

@@ -2,6 +2,7 @@
 
 namespace App\Controllers;
 
+use App\Libraries\KimiAnalisis;
 use App\Libraries\SendGridMailer;
 use App\Models\DinamicaModel;
 use App\Models\ParticipantModel;
@@ -161,20 +162,39 @@ class SesionesController extends BaseController
     {
         $sesion = (new SesionModel())->findByToken($token);
         if ($sesion) {
-            (new SesionModel())->update((int) $sesion['id'], [
+            $sesionModel = new SesionModel();
+            $sesionModel->update((int) $sesion['id'], [
                 'estado' => 'cerrada',
                 'cerrada_at' => date('Y-m-d H:i:s'),
             ]);
 
             if ($sesion['dinamica_slug'] === 'el-meridian') {
-                $this->enviarResumenElMeridian($sesion);
+                $analisisPorEquipo = $this->generarAnalisisElMeridian((int) $sesion['id']);
+                $sesionModel->update((int) $sesion['id'], ['analisis_ia' => json_encode($analisisPorEquipo, JSON_UNESCAPED_UNICODE)]);
+                $this->enviarResumenElMeridian($sesion, $analisisPorEquipo);
             }
         }
 
         return redirect()->to('/sesiones/resultados/' . $token);
     }
 
-    private function enviarResumenElMeridian(array $sesion): void
+    /**
+     * @return array<string, string|null> team => texto del analisis (o null si Kimi no respondio)
+     */
+    private function generarAnalisisElMeridian(int $sesionId): array
+    {
+        $porEquipo = (new RespuestaMomentoModel())->respuestasPorPersona($sesionId);
+        $kimi = new KimiAnalisis();
+
+        $analisis = [];
+        foreach ($porEquipo as $equipo) {
+            $analisis[$equipo['team']] = $kimi->analizarEquipo($equipo);
+        }
+
+        return $analisis;
+    }
+
+    private function enviarResumenElMeridian(array $sesion, array $analisisPorEquipo): void
     {
         $destino = session('usuario_email');
         if (!$destino) {
@@ -185,6 +205,11 @@ class SesionesController extends BaseController
         if (empty($equipos)) {
             return;
         }
+
+        foreach ($equipos as &$eq) {
+            $eq['analisisIa'] = $analisisPorEquipo[$eq['team']] ?? null;
+        }
+        unset($eq);
 
         $html = view('emails/el_meridian_resumen', [
             'sesion' => $sesion,
@@ -207,9 +232,16 @@ class SesionesController extends BaseController
         }
 
         if ($sesion['dinamica_slug'] === 'el-meridian') {
+            $equipos = (new RespuestaMomentoModel())->resultadosPorEquipo((int) $sesion['id']);
+            $analisisPorEquipo = json_decode((string) ($sesion['analisis_ia'] ?? ''), true) ?? [];
+            foreach ($equipos as &$eq) {
+                $eq['analisisIa'] = $analisisPorEquipo[$eq['team']] ?? null;
+            }
+            unset($eq);
+
             return view('el-meridian/resultados', [
                 'sesion' => $sesion,
-                'equipos' => (new RespuestaMomentoModel())->resultadosPorEquipo((int) $sesion['id']),
+                'equipos' => $equipos,
             ]);
         }
 

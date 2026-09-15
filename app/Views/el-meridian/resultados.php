@@ -35,6 +35,12 @@
                 <p class="muted" style="margin:0;"><?= esc($eq['resumenTexto']) ?></p>
             </div>
 
+            <?php if (!empty($eq['analisisIa'])): ?>
+            <div class="confidential" style="background:#EEF2FB; border-style:solid; margin-bottom:20px; white-space:pre-line;">
+                <p class="muted" style="margin:0 0 8px; text-transform:uppercase; font-size:0.75rem; letter-spacing:0.05em;">Análisis para el debrief</p><?= esc($eq['analisisIa']) ?>
+            </div>
+            <?php endif; ?>
+
             <?php foreach ($eq['momentos'] as $numMomento => $respuestas): ?>
                 <p class="muted" style="margin-bottom:4px;">Momento <?= (int) $numMomento ?></p>
                 <?php if (empty($respuestas)): ?>

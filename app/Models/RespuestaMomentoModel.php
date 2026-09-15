@@ -200,6 +200,59 @@ class RespuestaMomentoModel extends Model
         return $resultado;
     }
 
+    /**
+     * Igual que resultadosPorEquipo() pero desglosado por persona (con
+     * nombre), para alimentar el análisis de Kimi — ese sí necesita ver el
+     * patrón individual a través de los momentos, no solo los conteos.
+     *
+     * @return array<int, array{team: string, personas: array<int, array{nombre: string, rol: string, momentos: array<int, string>}>}>
+     */
+    public function respuestasPorPersona(int $sesionId): array
+    {
+        helper('el_meridian');
+        $momentosDefinidos = el_meridian_momentos();
+
+        $participantModel = new ParticipantModel();
+        $miembros = $participantModel->where('sesion_id', $sesionId)->where('team IS NOT NULL')->findAll();
+
+        $porEquipo = [];
+        foreach ($miembros as $miembro) {
+            $porEquipo[$miembro['team']][] = $miembro;
+        }
+
+        $resultado = [];
+        foreach ($porEquipo as $team => $integrantes) {
+            $personas = [];
+            foreach ($integrantes as $integrante) {
+                $totalMomentos = count($momentosDefinidos[$integrante['role']]['momentos'] ?? []);
+                $momentos = [];
+                for ($momento = 1; $momento <= $totalMomentos; $momento++) {
+                    $respuesta = $this->respuestaDe((int) $integrante['id'], $momento);
+                    if (!$respuesta || $respuesta['respuesta'] === 'sin_respuesta') {
+                        continue;
+                    }
+                    $definicion = $momentosDefinidos[$integrante['role']]['momentos'][$momento] ?? null;
+                    $momentos[$momento] = $definicion['opciones'][$respuesta['respuesta']] ?? $respuesta['respuesta'];
+                }
+
+                if (!empty($momentos)) {
+                    $personas[] = [
+                        'nombre'   => $integrante['nombre'],
+                        'rol'      => $momentosDefinidos[$integrante['role']]['nombre'] ?? $integrante['role'],
+                        'momentos' => $momentos,
+                    ];
+                }
+            }
+
+            if (!empty($personas)) {
+                $resultado[] = ['team' => $team, 'personas' => $personas];
+            }
+        }
+
+        usort($resultado, static fn ($a, $b) => strnatcmp($a['team'], $b['team']));
+        return $resultado;
+    }
+
     private function resumenTexto(int $positivos, int $total): string
     {
         if ($total === 0) {
