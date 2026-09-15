@@ -122,7 +122,7 @@
                     <td><?= esc($p['documento']) ?></td>
                     <td><?= esc($p['cargo']) ?></td>
                     <td><?= esc($p['team'] ?? 'Sin asignar') ?></td>
-                    <td><?= esc($p['role'] ?? '—') ?></td>
+                    <td><?= esc($p['role'] ? ($nombresRol[$p['role']] ?? $p['role']) : '—') ?></td>
                 </tr>
             <?php endforeach; ?>
             </tbody>

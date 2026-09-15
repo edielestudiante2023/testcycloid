@@ -270,58 +270,89 @@ class RespuestaMomentoModel extends Model
 
         $resultado = [];
         foreach ($porPersona as $team => $integrantes) {
-            $promedios = [1 => [], 2 => [], 3 => [], 4 => []];
-            foreach ($integrantes as $integrante) {
-                foreach ($integrante['valores'] as $momento => $valor) {
-                    if ($momento > 4) {
-                        continue;
-                    }
-                    $puntaje = ElMeridianDimensiones::puntaje($momento, $integrante['role'], $valor);
-                    if ($puntaje !== null) {
-                        $promedios[$momento][] = $puntaje;
-                    }
-                }
-            }
-
-            $promedio = static fn (array $p) => empty($p) ? null : array_sum($p) / count($p);
-            $p1 = $promedio($promedios[1]);
-            $p2 = $promedio($promedios[2]);
-            $p3 = $promedio($promedios[3]);
-            $p4 = $promedio($promedios[4]);
-
-            $dimensiones = [
-                ElMeridianDimensiones::NOMBRES_DIMENSION[1] => $p1 === null ? '—' : ElMeridianDimensiones::nivel($p1),
-                ElMeridianDimensiones::NOMBRES_DIMENSION[2] => $p2 === null ? '—' : ElMeridianDimensiones::nivel($p2),
-                ElMeridianDimensiones::NOMBRES_DIMENSION[3] => $p3 === null ? '—' : ElMeridianDimensiones::nivel($p3),
-                ElMeridianDimensiones::NOMBRES_DIMENSION[4] => $p4 === null ? '—' : ElMeridianDimensiones::nivel($p4),
-                'Persistencia ante presión' => ($p3 === null || $p4 === null)
-                    ? '—'
-                    : ElMeridianDimensiones::nivel($p4 - $p3 + 1),
-            ];
-
-            $positivos = 0;
-            $totalConDato = 0;
-            foreach ($integrantes as $integrante) {
-                $valorFinal = $integrante['valores'][5] ?? null;
-                $mapa = self::POLARIDAD_MOMENTO_FINAL[$integrante['role']] ?? null;
-                if ($valorFinal === null || $mapa === null || !array_key_exists($valorFinal, $mapa)) {
-                    continue;
-                }
-                $totalConDato++;
-                if ($mapa[$valorFinal]) {
-                    $positivos++;
-                }
-            }
-
-            $resultado[] = [
-                'team'        => $team,
-                'dimensiones' => $dimensiones,
-                'escuchados'  => $totalConDato === 0 ? '—' : "{$positivos}/{$totalConDato}",
-            ];
+            $resultado[] = ['team' => $team] + $this->calcularDimensiones($integrantes);
         }
 
         usort($resultado, static fn ($a, $b) => strnatcmp($a['team'], $b['team']));
         return $resultado;
+    }
+
+    /**
+     * Igual que radiografiaPorEquipo() pero consolidando a TODOS los equipos
+     * de la sesión en un solo cálculo — la vista "resumen global" de la
+     * empresa. Mismas reglas, sin distinguir equipo.
+     *
+     * @return array{dimensiones: array<string, string>, escuchados: string}
+     */
+    public function radiografiaGlobal(int $sesionId): array
+    {
+        $porPersona = $this->respuestasPorPersonaConValores($sesionId);
+
+        $todos = [];
+        foreach ($porPersona as $integrantes) {
+            $todos = array_merge($todos, $integrantes);
+        }
+
+        if (empty($todos)) {
+            return [];
+        }
+
+        return $this->calcularDimensiones($todos);
+    }
+
+    /**
+     * @param array<int, array{nombre: string, role: string, valores: array<int, string>}> $integrantes
+     * @return array{dimensiones: array<string, string>, escuchados: string}
+     */
+    private function calcularDimensiones(array $integrantes): array
+    {
+        $promedios = [1 => [], 2 => [], 3 => [], 4 => []];
+        foreach ($integrantes as $integrante) {
+            foreach ($integrante['valores'] as $momento => $valor) {
+                if ($momento > 4) {
+                    continue;
+                }
+                $puntaje = ElMeridianDimensiones::puntaje($momento, $integrante['role'], $valor);
+                if ($puntaje !== null) {
+                    $promedios[$momento][] = $puntaje;
+                }
+            }
+        }
+
+        $promedio = static fn (array $p) => empty($p) ? null : array_sum($p) / count($p);
+        $p1 = $promedio($promedios[1]);
+        $p2 = $promedio($promedios[2]);
+        $p3 = $promedio($promedios[3]);
+        $p4 = $promedio($promedios[4]);
+
+        $dimensiones = [
+            ElMeridianDimensiones::NOMBRES_DIMENSION[1] => $p1 === null ? '—' : ElMeridianDimensiones::nivel($p1),
+            ElMeridianDimensiones::NOMBRES_DIMENSION[2] => $p2 === null ? '—' : ElMeridianDimensiones::nivel($p2),
+            ElMeridianDimensiones::NOMBRES_DIMENSION[3] => $p3 === null ? '—' : ElMeridianDimensiones::nivel($p3),
+            ElMeridianDimensiones::NOMBRES_DIMENSION[4] => $p4 === null ? '—' : ElMeridianDimensiones::nivel($p4),
+            'Persistencia ante presión' => ($p3 === null || $p4 === null)
+                ? '—'
+                : ElMeridianDimensiones::nivel($p4 - $p3 + 1),
+        ];
+
+        $positivos = 0;
+        $totalConDato = 0;
+        foreach ($integrantes as $integrante) {
+            $valorFinal = $integrante['valores'][5] ?? null;
+            $mapa = self::POLARIDAD_MOMENTO_FINAL[$integrante['role']] ?? null;
+            if ($valorFinal === null || $mapa === null || !array_key_exists($valorFinal, $mapa)) {
+                continue;
+            }
+            $totalConDato++;
+            if ($mapa[$valorFinal]) {
+                $positivos++;
+            }
+        }
+
+        return [
+            'dimensiones' => $dimensiones,
+            'escuchados'  => $totalConDato === 0 ? '—' : "{$positivos}/{$totalConDato}",
+        ];
     }
 
     /**

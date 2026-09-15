@@ -76,6 +76,44 @@ class KimiAnalisis
         neutro, tono profesional pero cercano. Maximo 420 palabras en total.
         PROMPT;
 
+    private const SYSTEM_PROMPT_GLOBAL = <<<'PROMPT'
+        Eres un facilitador experto en dinamicas de liderazgo y comunicacion organizacional. Recibes un
+        resumen ya calculado matematicamente de varios equipos que pasaron por el mismo ejercicio de
+        simulacion en la misma sesion (misma empresa o mismo cliente), cada uno con sus propias dimensiones.
+        No recalcules esos numeros — son un hecho dado.
+
+        Tu trabajo es identificar patrones a nivel de la organizacion completa:
+        - Que fenomenos se repiten en varios o todos los equipos (eso indica que el patron es de la cultura
+          de la organizacion, no de un equipo aislado).
+        - Que diferencias notables hay entre equipos (sin senalar personas, comparar equipos entre si es
+          valido y util).
+
+        REGLA DE ORO — separa hechos de interpretacion. Los numeros son hechos. Lo que podrian significar es
+        una lectura, y debe sonar como lectura ("esto podria indicar...").
+
+        NO CULPES A NINGUN EQUIPO NI PERSONA. Describe patrones, no fallas. La pregunta correcta es sistemica
+        ("¿que hay en la forma de trabajar de esta organizacion que hace que...?"), nunca de culpa.
+
+        FORMATO DE SALIDA — exactamente estas tres partes, cada una con su titulo en mayusculas simples (sin
+        "##" ni "**"):
+
+        PATRÓN GENERAL DE LA ORGANIZACIÓN
+        Un parrafo que describa que se repite entre los equipos y que tan generalizado esta el fenomeno
+        (todos los equipos, la mayoria, o solo algunos).
+
+        DIFERENCIAS ENTRE EQUIPOS
+        Un parrafo que compare los equipos entre si — cual mostro mas o menos persistencia, claridad, o
+        percepcion de haber sido escuchado, y que podria explicar esa diferencia (como lectura, no hecho).
+
+        PREGUNTA PARA EL CIERRE GENERAL
+        Una sola pregunta sistemica que el facilitador pueda usar para cerrar la sesion completa con todos
+        los equipos presentes.
+
+        Reglas de forma: nada de Markdown, nada de abreviaturas tipo "M1/M2/M3", nada de anglicismos ni
+        palabras en ingles ("debrief", "feedback", etc.; usa "cierre", "conversacion de cierre"). Español
+        neutro, tono profesional pero cercano. Maximo 280 palabras en total.
+        PROMPT;
+
     private const NOMBRES_ETAPA = [
         1 => 'Al principio, con la primera información',
         2 => 'Después de hablar con el equipo por primera vez',
@@ -90,19 +128,38 @@ class KimiAnalisis
      */
     public function analizarEquipo(array $equipo, array $radiografia = []): ?string
     {
+        return $this->llamar(self::SYSTEM_PROMPT, $this->construirPrompt($equipo, $radiografia));
+    }
+
+    /**
+     * Análisis a nivel de toda la sesión (todos los equipos juntos) — patrones
+     * que se repiten entre equipos vs. diferencias notables entre ellos.
+     *
+     * @param array<int, array{team: string, dimensiones: array<string, string>, escuchados: string}> $equiposRadiografia
+     * @param array{dimensiones: array<string, string>, escuchados: string} $radiografiaGlobal
+     */
+    public function analizarGlobal(array $equiposRadiografia, array $radiografiaGlobal): ?string
+    {
+        if (count($equiposRadiografia) < 2) {
+            return null;
+        }
+
+        return $this->llamar(self::SYSTEM_PROMPT_GLOBAL, $this->construirPromptGlobal($equiposRadiografia, $radiografiaGlobal));
+    }
+
+    private function llamar(string $systemPrompt, string $userPrompt): ?string
+    {
         $cfgFile = APPPATH . 'Config/Kimi.' . ENVIRONMENT . '.php';
         if (!is_file($cfgFile)) {
             return null;
         }
         $cfg = require $cfgFile;
 
-        $prompt = $this->construirPrompt($equipo, $radiografia);
-
         $payload = json_encode([
             'model' => $cfg['model'] ?? 'kimi-k3',
             'messages' => [
-                ['role' => 'system', 'content' => self::SYSTEM_PROMPT],
-                ['role' => 'user', 'content' => $prompt],
+                ['role' => 'system', 'content' => $systemPrompt],
+                ['role' => 'user', 'content' => $userPrompt],
             ],
             'max_tokens' => 1800,
             'reasoning_effort' => 'low',
@@ -132,6 +189,34 @@ class KimiAnalisis
         $texto = $data['choices'][0]['message']['content'] ?? null;
 
         return $texto !== null && trim($texto) !== '' ? trim($texto) : null;
+    }
+
+    private function construirPromptGlobal(array $equiposRadiografia, array $radiografiaGlobal): string
+    {
+        $lineas = ['Resumen de ' . count($equiposRadiografia) . ' equipos que pasaron por el mismo '
+            . 'ejercicio en la misma sesión:', ''];
+
+        foreach ($equiposRadiografia as $eq) {
+            $lineas[] = $eq['team'] . ':';
+            foreach ($eq['dimensiones'] as $dimension => $nivel) {
+                $lineas[] = '- ' . $dimension . ': ' . $nivel;
+            }
+            $lineas[] = '- Percepción de haber sido escuchado: ' . $eq['escuchados'];
+            $lineas[] = '';
+        }
+
+        if (!empty($radiografiaGlobal['dimensiones'])) {
+            $lineas[] = 'Promedio de toda la sesión (todos los equipos juntos):';
+            foreach ($radiografiaGlobal['dimensiones'] as $dimension => $nivel) {
+                $lineas[] = '- ' . $dimension . ': ' . $nivel;
+            }
+            $lineas[] = '- Percepción de haber sido escuchado: ' . ($radiografiaGlobal['escuchados'] ?? '—');
+        }
+
+        $lineas[] = '';
+        $lineas[] = 'Dame el análisis para el facilitador, siguiendo exactamente el formato de salida indicado.';
+
+        return implode("\n", $lineas);
     }
 
     private function construirPrompt(array $equipo, array $radiografia): string

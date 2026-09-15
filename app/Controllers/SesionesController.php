@@ -87,7 +87,32 @@ class SesionesController extends BaseController
             'count'           => (new ParticipantModel())->contarRegistrados((int) $sesion['id']),
             'progresoEquipos' => $progresoEquipos,
             'participants'    => (new ParticipantModel())->porSesion((int) $sesion['id']),
+            'nombresRol'      => $this->nombresRolPorDinamica($sesion['dinamica_slug']),
         ]);
+    }
+
+    /**
+     * @return array<string, string> letra de rol => nombre legible, según la dinámica
+     */
+    private function nombresRolPorDinamica(string $dinamicaSlug): array
+    {
+        if ($dinamicaSlug === 'el-meridian') {
+            $nombres = [];
+            foreach (el_meridian_momentos() as $rol => $info) {
+                $nombres[$rol] = $info['nombre'];
+            }
+            return $nombres;
+        }
+
+        if ($dinamicaSlug === 'liderazgo-comunicacion') {
+            $nombres = [];
+            foreach (liderazgo_comunicacion_role_cards() as $rol => $info) {
+                $nombres[$rol] = preg_replace('/^TARJETA\s+\w+\s*—\s*/u', '', $info['title']);
+            }
+            return $nombres;
+        }
+
+        return [];
     }
 
     public function contador(string $token)
@@ -180,14 +205,17 @@ class SesionesController extends BaseController
     }
 
     /**
-     * @return array<string, string|null> team => texto del analisis (o null si Kimi no respondio)
+     * @return array<string, string|null> team => texto del analisis (o null si Kimi no respondio);
+     *         más la clave especial "__global__" con el análisis consolidado de todos los equipos
+     *         (solo si hay 2 o más equipos).
      */
     private function generarAnalisisElMeridian(int $sesionId): array
     {
         $respuestaModel = new RespuestaMomentoModel();
         $porEquipo = $respuestaModel->respuestasPorPersona($sesionId);
+        $radiografiaEnLista = $respuestaModel->radiografiaPorEquipo($sesionId);
         $radiografiaPorEquipo = [];
-        foreach ($respuestaModel->radiografiaPorEquipo($sesionId) as $r) {
+        foreach ($radiografiaEnLista as $r) {
             $radiografiaPorEquipo[$r['team']] = $r;
         }
 
@@ -196,6 +224,8 @@ class SesionesController extends BaseController
         foreach ($porEquipo as $equipo) {
             $analisis[$equipo['team']] = $kimi->analizarEquipo($equipo, $radiografiaPorEquipo[$equipo['team']] ?? []);
         }
+
+        $analisis['__global__'] = $kimi->analizarGlobal($radiografiaEnLista, $respuestaModel->radiografiaGlobal($sesionId));
 
         return $analisis;
     }
@@ -227,6 +257,8 @@ class SesionesController extends BaseController
         $html = view('emails/el_meridian_resumen', [
             'sesion' => $sesion,
             'equipos' => $equipos,
+            'analisisGlobal' => $analisisPorEquipo['__global__'] ?? null,
+            'radiografiaGlobal' => $respuestaModel->radiografiaGlobal((int) $sesion['id']),
             'resultadosUrl' => site_url('sesiones/resultados/' . $sesion['token']),
         ]);
 
@@ -263,6 +295,8 @@ class SesionesController extends BaseController
             return view('el-meridian/resultados', [
                 'sesion' => $sesion,
                 'equipos' => $equipos,
+                'analisisGlobal' => $analisisPorEquipo['__global__'] ?? null,
+                'radiografiaGlobal' => $respuestaModel->radiografiaGlobal((int) $sesion['id']),
             ]);
         }
 

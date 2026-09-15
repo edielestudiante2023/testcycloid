@@ -24,6 +24,26 @@
         <div class="card"><p class="muted">Todavía no hay respuestas registradas en esta sesión.</p></div>
     <?php endif; ?>
 
+    <?php if (count($equipos) > 1 && !empty($radiografiaGlobal['dimensiones'])): ?>
+    <div class="card" style="border-color: var(--brand);">
+        <h2>Resumen global — toda la sesión (<?= count($equipos) ?> equipos)</h2>
+        <table style="margin-bottom:20px;">
+            <thead><tr><th>Dimensión</th><th>Nivel</th></tr></thead>
+            <tbody>
+            <?php foreach ($radiografiaGlobal['dimensiones'] as $dimension => $nivel): ?>
+                <tr><td><?= esc($dimension) ?></td><td><span class="role-badge"><?= esc($nivel) ?></span></td></tr>
+            <?php endforeach; ?>
+                <tr><td>Percepción de haber sido escuchado</td><td><span class="role-badge"><?= esc($radiografiaGlobal['escuchados']) ?></span></td></tr>
+            </tbody>
+        </table>
+        <?php if (!empty($analisisGlobal)): ?>
+        <div class="confidential" style="background:#EEF2FB; border-style:solid; white-space:pre-line;">
+            <p class="muted" style="margin:0 0 8px; text-transform:uppercase; font-size:0.75rem; letter-spacing:0.05em;">Análisis de cierre general</p><?= esc($analisisGlobal) ?>
+        </div>
+        <?php endif; ?>
+    </div>
+    <?php endif; ?>
+
     <?php foreach ($equipos as $eq): ?>
         <div class="card">
             <h2><?= esc($eq['team']) ?></h2>
