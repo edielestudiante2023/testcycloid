@@ -16,7 +16,7 @@ class RespuestaMomentoModel extends Model
     /**
      * Qué opciones del último momento de cada rol reflejan que la persona
      * sintió que su opinión sí llegó con claridad a la decisión final.
-     * Es solo para el resumen del debrief — no afecta el ejercicio en sí.
+     * Es solo para el resumen del cierre reflexivo — no afecta el ejercicio en sí.
      */
     private const POLARIDAD_MOMENTO_FINAL = [
         'A' => ['bastante' => true, 'poco' => false, 'casi_nada' => false],
@@ -123,7 +123,7 @@ class RespuestaMomentoModel extends Model
     }
 
     /**
-     * Resultados completos para el debrief: por equipo, el desglose de
+     * Resultados completos para el cierre reflexivo: por equipo, el desglose de
      * respuestas de cada momento (cuántos eligieron cada opción) y un
      * resumen de si las opiniones individuales llegaron claras al final.
      *

@@ -37,7 +37,7 @@
 
             <?php if (!empty($eq['analisisIa'])): ?>
             <div class="confidential" style="background:#EEF2FB; border-style:solid; margin-bottom:20px; white-space:pre-line;">
-                <p class="muted" style="margin:0 0 8px; text-transform:uppercase; font-size:0.75rem; letter-spacing:0.05em;">Análisis para el debrief</p><?= esc($eq['analisisIa']) ?>
+                <p class="muted" style="margin:0 0 8px; text-transform:uppercase; font-size:0.75rem; letter-spacing:0.05em;">Análisis de cierre</p><?= esc($eq['analisisIa']) ?>
             </div>
             <?php endif; ?>
 

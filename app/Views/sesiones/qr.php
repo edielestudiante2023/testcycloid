@@ -58,7 +58,7 @@
             <p class="muted">El correo ya se envió. El cronómetro es solo una referencia visual — tú decides cuándo cerrar.</p>
             <p style="font-size:2.5rem; font-weight:700; text-align:center;" id="cronometro">--:--</p>
             <form method="post" action="<?= site_url('sesiones/cerrar/' . $sesion['token']) ?>"
-                  onsubmit="return confirm('¿Cerrar el ejercicio? Pasarás a la vista de resultados/debrief.');">
+                  onsubmit="return confirm('¿Cerrar el ejercicio? Pasarás a la vista de resultados.');">
                 <button type="submit" class="btn-danger">Cerrar ejercicio</button>
             </form>
         </div>

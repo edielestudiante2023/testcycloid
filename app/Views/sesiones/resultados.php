@@ -85,7 +85,7 @@ Reorganicen su plan.</p>
     </div>
 
     <div class="card">
-        <h2>Solución correcta (para el debrief)</h2>
+        <h2>Solución correcta (para el cierre reflexivo)</h2>
         <ul>
             <li>Prioridad: B es indispensable.</li>
             <li>Versión: V6.</li>
