@@ -82,6 +82,39 @@ class ElMeridianController extends BaseController
     }
 
     /**
+     * Pantalla de contexto, previa al rol: qué es El Meridián, a dónde va,
+     * quién más está en tu equipo y por qué salieron con retraso. No revela
+     * nada confidencial — solo lo que cualquiera a bordo ya sabría.
+     */
+    public function intro(string $participantToken)
+    {
+        $participant = (new ParticipantModel())->findByToken($participantToken);
+        if (!$participant || !$participant['role']) {
+            return view('el-meridian/enlace_invalido');
+        }
+
+        $momentosDefinidos = el_meridian_momentos();
+        $equipo = (new ParticipantModel())
+            ->where('sesion_id', $participant['sesion_id'])
+            ->where('team', $participant['team'])
+            ->findAll();
+
+        $companeros = [];
+        foreach ($equipo as $miembro) {
+            $companeros[] = [
+                'nombre' => $miembro['nombre'],
+                'rol'    => $momentosDefinidos[$miembro['role']]['nombre'] ?? $miembro['role'],
+                'esTu'   => (int) $miembro['id'] === (int) $participant['id'],
+            ];
+        }
+
+        return view('el-meridian/intro', [
+            'participant' => $participant,
+            'companeros'  => $companeros,
+        ]);
+    }
+
+    /**
      * Pantalla del rol: decide si mostrar la pregunta del momento actual, la
      * pantalla de espera (ya respondió, falta el equipo), o el cierre (el
      * equipo ya completó todos los momentos).

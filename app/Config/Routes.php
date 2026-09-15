@@ -38,6 +38,7 @@ $routes->group('el-meridian', static function (RouteCollection $routes) {
     $routes->get('registro/(:segment)', 'ElMeridianController::registro/$1');
     $routes->post('asignar', 'ElMeridianController::asignar');
     $routes->get('registrado/(:segment)', 'ElMeridianController::registrado/$1');
+    $routes->get('intro/(:segment)', 'ElMeridianController::intro/$1');
     $routes->get('rol/(:segment)', 'ElMeridianController::rol/$1');
     $routes->post('momento/(:segment)', 'ElMeridianController::responderMomento/$1');
     $routes->get('estado/(:segment)', 'ElMeridianController::estado/$1');

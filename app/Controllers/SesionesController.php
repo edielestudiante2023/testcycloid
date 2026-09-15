@@ -116,9 +116,13 @@ class SesionesController extends BaseController
             $mailer = new SendGridMailer();
             foreach ($asignados as $p) {
                 $rolUrl = site_url($sesion['dinamica_slug'] . '/rol/' . $p['token']);
+                $introUrl = $sesion['dinamica_slug'] === 'el-meridian'
+                    ? site_url('el-meridian/intro/' . $p['token'])
+                    : null;
                 $html = view('emails/rol', [
-                    'nombre'        => $p['nombre'],
-                    'rolUrl'        => $rolUrl,
+                    'nombre'         => $p['nombre'],
+                    'rolUrl'         => $rolUrl,
+                    'introUrl'       => $introUrl,
                     'dinamicaNombre' => $sesion['dinamica_nombre'],
                 ]);
                 $mailer->send(
