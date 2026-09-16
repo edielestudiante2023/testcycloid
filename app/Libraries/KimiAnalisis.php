@@ -114,6 +114,43 @@ class KimiAnalisis
         neutro, tono profesional pero cercano. Maximo 280 palabras en total.
         PROMPT;
 
+    private const SYSTEM_PROMPT_CONSOLIDADO = <<<'PROMPT'
+        Eres un facilitador experto en dinamicas de liderazgo y comunicacion organizacional. Recibes el
+        historial de varias sesiones CERRADAS del mismo cliente (la misma empresa), del mismo ejercicio de
+        simulacion, en fechas distintas — cada sesion ya tiene sus dimensiones calculadas matematicamente,
+        en orden cronologico. No recalcules esos numeros — son un hecho dado.
+
+        Tu trabajo es leer la EVOLUCION A TRAVES DEL TIEMPO, no comparar equipos de una sola sesion:
+        - Que dimensiones se mantienen igual sesion tras sesion (eso sugiere un rasgo estructural de la
+          organizacion, no un evento de un solo dia).
+        - Que dimensiones cambian de una sesion a la siguiente — mejoran o empeoran — y en que fecha ocurre
+          el cambio.
+
+        REGLA DE ORO — separa hechos de interpretacion. Los numeros y las fechas son hechos. Lo que podrian
+        significar es una lectura ("esto podria indicar...").
+
+        NO CULPES A NINGUNA SESION, EQUIPO NI PERSONA. Si algo empeoro entre una fecha y otra, describelo
+        como patron organizacional a explorar, nunca como una falla de un momento puntual.
+
+        FORMATO DE SALIDA — exactamente estas tres partes, cada una con su titulo en mayusculas simples (sin
+        "##" ni "**"):
+
+        EVOLUCIÓN A TRAVÉS DEL TIEMPO
+        Un parrafo que describa si el patron se repite, mejora o empeora entre las sesiones, citando fechas
+        concretas.
+
+        QUÉ SE MANTIENE IGUAL
+        Un parrafo sobre las dimensiones que no cambian de una sesion a otra — la posible "huella
+        estructural" de esta organizacion.
+
+        PREGUNTA PARA EL CIERRE CONSOLIDADO
+        Una sola pregunta sistemica que el facilitador pueda usar al presentarle este historial al cliente.
+
+        Reglas de forma: nada de Markdown, nada de abreviaturas tipo "M1/M2/M3", nada de anglicismos ni
+        palabras en ingles ("debrief", "feedback", etc.; usa "cierre", "conversacion de cierre"). Español
+        neutro, tono profesional pero cercano. Maximo 300 palabras en total.
+        PROMPT;
+
     private const NOMBRES_ETAPA = [
         1 => 'Al principio, con la primera información',
         2 => 'Después de hablar con el equipo por primera vez',
@@ -145,6 +182,22 @@ class KimiAnalisis
         }
 
         return $this->llamar(self::SYSTEM_PROMPT_GLOBAL, $this->construirPromptGlobal($equiposRadiografia, $radiografiaGlobal));
+    }
+
+    /**
+     * Análisis entre varias sesiones cerradas del mismo cliente, a través
+     * del tiempo (no entre equipos de una sola sesión — ver analizarGlobal).
+     *
+     * @param array<int, array{fecha: string, dimensiones: array<string, string>, escuchados: string}> $porSesion
+     * @param array{dimensiones: array<string, string>, escuchados: string} $radiografiaConsolidada
+     */
+    public function analizarConsolidadoCliente(array $porSesion, array $radiografiaConsolidada): ?string
+    {
+        if (count($porSesion) < 2) {
+            return null;
+        }
+
+        return $this->llamar(self::SYSTEM_PROMPT_CONSOLIDADO, $this->construirPromptConsolidado($porSesion, $radiografiaConsolidada));
     }
 
     private function llamar(string $systemPrompt, string $userPrompt): ?string
@@ -189,6 +242,34 @@ class KimiAnalisis
         $texto = $data['choices'][0]['message']['content'] ?? null;
 
         return $texto !== null && trim($texto) !== '' ? trim($texto) : null;
+    }
+
+    private function construirPromptConsolidado(array $porSesion, array $radiografiaConsolidada): string
+    {
+        $lineas = ['Historial de ' . count($porSesion) . ' sesiones cerradas del mismo cliente, del mismo '
+            . 'ejercicio, en orden cronológico:', ''];
+
+        foreach ($porSesion as $s) {
+            $lineas[] = 'Sesión del ' . $s['fecha'] . ':';
+            foreach ($s['dimensiones'] as $dimension => $nivel) {
+                $lineas[] = '- ' . $dimension . ': ' . $nivel;
+            }
+            $lineas[] = '- Percepción de haber sido escuchado: ' . $s['escuchados'];
+            $lineas[] = '';
+        }
+
+        if (!empty($radiografiaConsolidada['dimensiones'])) {
+            $lineas[] = 'Promedio consolidado de todas las sesiones juntas:';
+            foreach ($radiografiaConsolidada['dimensiones'] as $dimension => $nivel) {
+                $lineas[] = '- ' . $dimension . ': ' . $nivel;
+            }
+            $lineas[] = '- Percepción de haber sido escuchado: ' . ($radiografiaConsolidada['escuchados'] ?? '—');
+        }
+
+        $lineas[] = '';
+        $lineas[] = 'Dame el análisis para el facilitador, siguiendo exactamente el formato de salida indicado.';
+
+        return implode("\n", $lineas);
     }
 
     private function construirPromptGlobal(array $equiposRadiografia, array $radiografiaGlobal): string

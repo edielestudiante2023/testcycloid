@@ -407,6 +407,63 @@ class RespuestaMomentoModel extends Model
     }
 
     /**
+     * Los clientes (empresas) que tienen 2 o más sesiones CERRADAS de esta
+     * dinámica — son los que ya tienen algo que consolidar entre sesiones.
+     *
+     * @return array<int, string>
+     */
+    public function clientesConsolidables(int $dinamicaId): array
+    {
+        $rows = $this->db->table('sesiones')
+            ->select('cliente')
+            ->where('dinamica_id', $dinamicaId)
+            ->where('estado', 'cerrada')
+            ->groupBy('cliente')
+            ->having('COUNT(*) >=', 2, false)
+            ->get()
+            ->getResultArray();
+
+        return array_column($rows, 'cliente');
+    }
+
+    /**
+     * Todas las sesiones CERRADAS de esta dinámica que comparten el mismo
+     * texto en el campo "cliente", en orden cronológico.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function sesionesCerradasPorCliente(int $dinamicaId, string $cliente): array
+    {
+        return $this->db->table('sesiones')
+            ->where('dinamica_id', $dinamicaId)
+            ->where('cliente', $cliente)
+            ->where('estado', 'cerrada')
+            ->orderBy('cerrada_at', 'ASC')
+            ->get()
+            ->getResultArray();
+    }
+
+    /**
+     * @param array<int, int> $sesionIds
+     * @return array{dimensiones: array<string, string>, escuchados: string}
+     */
+    public function radiografiaConsolidadaPorCliente(array $sesionIds): array
+    {
+        $todos = [];
+        foreach ($sesionIds as $sesionId) {
+            foreach ($this->respuestasPorPersonaConValores((int) $sesionId) as $integrantes) {
+                $todos = array_merge($todos, $integrantes);
+            }
+        }
+
+        if (empty($todos)) {
+            return [];
+        }
+
+        return $this->calcularDimensiones($todos);
+    }
+
+    /**
      * Rellena con una respuesta "forzada" a quien le falte responder un
      * momento, para que el equipo pueda avanzar sin quedar atascado por un
      * rezagado. Uso exclusivo del facilitador.

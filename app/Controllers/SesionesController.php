@@ -547,6 +547,13 @@ class SesionesController extends BaseController
     private function configConsolidable(string $dinamicaSlug): ?array
     {
         return match ($dinamicaSlug) {
+            'el-meridian' => [
+                'modelo'     => new RespuestaMomentoModel(),
+                'kimi'       => new KimiAnalisis(),
+                'vista'      => 'el-meridian/consolidado',
+                'vistaEmail' => 'emails/el_meridian_consolidado',
+                'nombre'     => 'El Meridián',
+            ],
             'volver-a-casa' => [
                 'modelo'     => new VolverACasaAnalisisModel(),
                 'kimi'       => new KimiAnalisisVolverACasa(),
