@@ -28,6 +28,8 @@ $routes->group('sesiones', ['filter' => 'auth'], static function (RouteCollectio
     $routes->post('forzar-avance/(:segment)', 'SesionesController::forzarAvance/$1');
     $routes->post('reciclar/(:segment)', 'SesionesController::reciclarParticipantes/$1');
     $routes->get('resultados/(:segment)', 'SesionesController::resultados/$1');
+    $routes->get('descargar-pdf/(:segment)', 'SesionesController::descargarPdf/$1');
+    $routes->post('enviar-pdf/(:segment)', 'SesionesController::enviarPdfATodos/$1');
     $routes->get('consolidado/(:segment)', 'SesionesController::consolidado/$1');
     $routes->post('consolidado-enviar/(:segment)', 'SesionesController::enviarConsolidadoEmail/$1');
     $routes->post('liderazgo/(:segment)', 'SesionesController::liderazgo/$1');

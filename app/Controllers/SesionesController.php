@@ -5,6 +5,7 @@ namespace App\Controllers;
 use App\Libraries\KimiAnalisis;
 use App\Libraries\KimiAnalisisCodigoAzul;
 use App\Libraries\KimiAnalisisVolverACasa;
+use App\Libraries\ResultadosPdf;
 use App\Libraries\SendGridMailer;
 use App\Models\CodigoAzulAnalisisModel;
 use App\Models\DinamicaModel;
@@ -584,6 +585,43 @@ class SesionesController extends BaseController
         );
     }
 
+    /**
+     * @return array{equipos: array<int, array<string, mixed>>, analisisGlobal: string|null, radiografiaGlobal: array<string, mixed>}|null
+     */
+    private function datosResultados(array $sesion): ?array
+    {
+        $modeloClase = match ($sesion['dinamica_slug']) {
+            'el-meridian'   => RespuestaMomentoModel::class,
+            'volver-a-casa' => VolverACasaAnalisisModel::class,
+            'codigo-azul'   => CodigoAzulAnalisisModel::class,
+            default         => null,
+        };
+        if ($modeloClase === null) {
+            return null;
+        }
+
+        $respuestaModel = new $modeloClase();
+        $equipos = $respuestaModel->resultadosPorEquipo((int) $sesion['id']);
+        $analisisPorEquipo = json_decode((string) ($sesion['analisis_ia'] ?? ''), true) ?? [];
+
+        $radiografiaPorEquipo = [];
+        foreach ($respuestaModel->radiografiaPorEquipo((int) $sesion['id']) as $r) {
+            $radiografiaPorEquipo[$r['team']] = $r;
+        }
+
+        foreach ($equipos as &$eq) {
+            $eq['analisisIa'] = $analisisPorEquipo[$eq['team']] ?? null;
+            $eq['radiografia'] = $radiografiaPorEquipo[$eq['team']] ?? null;
+        }
+        unset($eq);
+
+        return [
+            'equipos'           => $equipos,
+            'analisisGlobal'    => $analisisPorEquipo['__global__'] ?? null,
+            'radiografiaGlobal' => $respuestaModel->radiografiaGlobal((int) $sesion['id']),
+        ];
+    }
+
     public function resultados(string $token)
     {
         $sesion = (new SesionModel())->findByToken($token);
@@ -591,76 +629,13 @@ class SesionesController extends BaseController
             return redirect()->to('/');
         }
 
-        if ($sesion['dinamica_slug'] === 'el-meridian') {
-            $respuestaModel = new RespuestaMomentoModel();
-            $equipos = $respuestaModel->resultadosPorEquipo((int) $sesion['id']);
-            $analisisPorEquipo = json_decode((string) ($sesion['analisis_ia'] ?? ''), true) ?? [];
-
-            $radiografiaPorEquipo = [];
-            foreach ($respuestaModel->radiografiaPorEquipo((int) $sesion['id']) as $r) {
-                $radiografiaPorEquipo[$r['team']] = $r;
+        $datos = $this->datosResultados($sesion);
+        if ($datos) {
+            $extra = ['sesion' => $sesion];
+            if ($this->request->getGet('pdfEnviado') !== null) {
+                $extra['pdfEnviado'] = $this->request->getGet('pdfEnviado') === '1';
             }
-
-            foreach ($equipos as &$eq) {
-                $eq['analisisIa'] = $analisisPorEquipo[$eq['team']] ?? null;
-                $eq['radiografia'] = $radiografiaPorEquipo[$eq['team']] ?? null;
-            }
-            unset($eq);
-
-            return view('el-meridian/resultados', [
-                'sesion' => $sesion,
-                'equipos' => $equipos,
-                'analisisGlobal' => $analisisPorEquipo['__global__'] ?? null,
-                'radiografiaGlobal' => $respuestaModel->radiografiaGlobal((int) $sesion['id']),
-            ]);
-        }
-
-        if ($sesion['dinamica_slug'] === 'volver-a-casa') {
-            $respuestaModel = new VolverACasaAnalisisModel();
-            $equipos = $respuestaModel->resultadosPorEquipo((int) $sesion['id']);
-            $analisisPorEquipo = json_decode((string) ($sesion['analisis_ia'] ?? ''), true) ?? [];
-
-            $radiografiaPorEquipo = [];
-            foreach ($respuestaModel->radiografiaPorEquipo((int) $sesion['id']) as $r) {
-                $radiografiaPorEquipo[$r['team']] = $r;
-            }
-
-            foreach ($equipos as &$eq) {
-                $eq['analisisIa'] = $analisisPorEquipo[$eq['team']] ?? null;
-                $eq['radiografia'] = $radiografiaPorEquipo[$eq['team']] ?? null;
-            }
-            unset($eq);
-
-            return view('volver-a-casa/resultados', [
-                'sesion' => $sesion,
-                'equipos' => $equipos,
-                'analisisGlobal' => $analisisPorEquipo['__global__'] ?? null,
-                'radiografiaGlobal' => $respuestaModel->radiografiaGlobal((int) $sesion['id']),
-            ]);
-        }
-
-        if ($sesion['dinamica_slug'] === 'codigo-azul') {
-            $respuestaModel = new CodigoAzulAnalisisModel();
-            $equipos = $respuestaModel->resultadosPorEquipo((int) $sesion['id']);
-            $analisisPorEquipo = json_decode((string) ($sesion['analisis_ia'] ?? ''), true) ?? [];
-
-            $radiografiaPorEquipo = [];
-            foreach ($respuestaModel->radiografiaPorEquipo((int) $sesion['id']) as $r) {
-                $radiografiaPorEquipo[$r['team']] = $r;
-            }
-
-            foreach ($equipos as &$eq) {
-                $eq['analisisIa'] = $analisisPorEquipo[$eq['team']] ?? null;
-                $eq['radiografia'] = $radiografiaPorEquipo[$eq['team']] ?? null;
-            }
-            unset($eq);
-
-            return view('codigo-azul/resultados', [
-                'sesion' => $sesion,
-                'equipos' => $equipos,
-                'analisisGlobal' => $analisisPorEquipo['__global__'] ?? null,
-                'radiografiaGlobal' => $respuestaModel->radiografiaGlobal((int) $sesion['id']),
-            ]);
+            return view($sesion['dinamica_slug'] . '/resultados', array_merge($extra, $datos));
         }
 
         $participants = (new ParticipantModel())->porSesion((int) $sesion['id']);
@@ -676,6 +651,92 @@ class SesionesController extends BaseController
             'answers'      => liderazgo_comunicacion_role_answers(),
             'rolBaseUrl'   => site_url($sesion['dinamica_slug'] . '/rol/'),
         ]);
+    }
+
+    private function generarPdfResultados(array $sesion): ?string
+    {
+        $datos = $this->datosResultados($sesion);
+        if (!$datos) {
+            return null;
+        }
+
+        $html = view('pdf/resultados', array_merge(['sesion' => $sesion], $datos));
+
+        return (new ResultadosPdf())->generar($html);
+    }
+
+    /**
+     * Uso exclusivo del facilitador: descarga el PDF de resultados. Solo
+     * disponible una vez el ejercicio está cerrado (antes de cerrar no hay
+     * análisis de Kimi ni radiografía definitiva que mostrar).
+     */
+    public function descargarPdf(string $token)
+    {
+        $sesion = (new SesionModel())->findByToken($token);
+        if (!$sesion || $sesion['estado'] !== 'cerrada') {
+            return redirect()->to('/sesiones/resultados/' . $token);
+        }
+
+        $pdf = $this->generarPdfResultados($sesion);
+        if ($pdf === null) {
+            return redirect()->to('/sesiones/resultados/' . $token);
+        }
+
+        $nombreArchivo = 'resultados-' . $sesion['dinamica_slug'] . '-' . $sesion['token'] . '.pdf';
+
+        return $this->response
+            ->setHeader('Content-Type', 'application/pdf')
+            ->setHeader('Content-Disposition', 'attachment; filename="' . $nombreArchivo . '"')
+            ->setBody($pdf);
+    }
+
+    /**
+     * Uso exclusivo del facilitador: genera el PDF y lo manda por correo al
+     * administrador (destinatario directo, para confirmar que salió) y a
+     * TODOS los participantes de la sesión en copia oculta (no necesitan
+     * verse entre sí para esto — es un envío informativo, no una
+     * conversación). Solo disponible con el ejercicio ya cerrado.
+     */
+    public function enviarPdfATodos(string $token)
+    {
+        $sesion = (new SesionModel())->findByToken($token);
+        if (!$sesion || $sesion['estado'] !== 'cerrada') {
+            return redirect()->to('/sesiones/resultados/' . $token);
+        }
+
+        $pdf = $this->generarPdfResultados($sesion);
+        if ($pdf === null) {
+            return redirect()->to('/sesiones/resultados/' . $token);
+        }
+
+        $adminEmail = session('usuario_email');
+        $participantes = (new ParticipantModel())->porSesion((int) $sesion['id']);
+
+        $destinatariosOcultos = [];
+        foreach ($participantes as $p) {
+            $destinatariosOcultos[] = $p['email_corporativo'];
+            $destinatariosOcultos[] = $p['email_personal'];
+        }
+
+        if (!$adminEmail) {
+            return redirect()->to('/sesiones/resultados/' . $token . '?pdfEnviado=0');
+        }
+
+        $html = view('emails/pdf_resultados', [
+            'sesion'       => $sesion,
+            'resultadosUrl' => site_url('sesiones/resultados/' . $sesion['token']),
+        ]);
+
+        $nombreArchivo = 'resultados-' . $sesion['dinamica_slug'] . '-' . $sesion['token'] . '.pdf';
+        $resultado = (new SendGridMailer())->send(
+            [$adminEmail],
+            $sesion['dinamica_nombre'] . ' — resultados en PDF de "' . $sesion['cliente'] . '"',
+            $html,
+            $destinatariosOcultos,
+            [['contenido' => $pdf, 'nombreArchivo' => $nombreArchivo, 'tipo' => 'application/pdf']]
+        );
+
+        return redirect()->to('/sesiones/resultados/' . $token . '?pdfEnviado=' . ($resultado['ok'] ? '1' : '0'));
     }
 
     /**

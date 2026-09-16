@@ -101,6 +101,18 @@
             <button type="submit" class="btn-danger">Cerrar ejercicio</button>
         </form>
     </div>
+    <?php else: ?>
+    <div class="card">
+        <h2>PDF de resultados</h2>
+        <?php if (isset($pdfEnviado)): ?>
+            <p style="color:<?= $pdfEnviado ? '#1a7f37' : '#c0392b' ?>;"><?= $pdfEnviado ? 'PDF enviado.' : 'No se pudo enviar (revisa que tengas correo de administrador en la sesión).' ?></p>
+        <?php endif; ?>
+        <a class="btn" href="<?= site_url('sesiones/descargar-pdf/' . $sesion['token']) ?>" style="margin-right:12px;">Descargar PDF</a>
+        <form method="post" action="<?= site_url('sesiones/enviar-pdf/' . $sesion['token']) ?>" style="display:inline;"
+              onsubmit="return confirm('¿Enviar el PDF de resultados por correo a todos los participantes y al administrador?');">
+            <button type="submit">Enviar PDF a todos</button>
+        </form>
+    </div>
     <?php endif; ?>
 </div>
 </body>

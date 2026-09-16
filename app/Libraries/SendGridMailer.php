@@ -11,9 +11,10 @@ class SendGridMailer
     /**
      * @param string[] $toEmails
      * @param string[] $bccEmails copia oculta — no aparece para los destinatarios de "to"
+     * @param array<int, array{contenido: string, nombreArchivo: string, tipo: string}> $adjuntos contenido SIN codificar (se codifica aquí)
      * @return array{ok: bool, status: int, body: string}
      */
-    public function send(array $toEmails, string $subject, string $html, array $bccEmails = []): array
+    public function send(array $toEmails, string $subject, string $html, array $bccEmails = [], array $adjuntos = []): array
     {
         $secretsFile = APPPATH . 'Config/Mail.' . ENVIRONMENT . '.php';
         if (!is_file($secretsFile)) {
@@ -47,6 +48,15 @@ class SendGridMailer
                 ],
             ],
         ];
+
+        if (!empty($adjuntos)) {
+            $payload['attachments'] = array_map(static fn ($a) => [
+                'content'     => base64_encode($a['contenido']),
+                'filename'    => $a['nombreArchivo'],
+                'type'        => $a['tipo'],
+                'disposition' => 'attachment',
+            ], $adjuntos);
+        }
 
         $ch = curl_init('https://api.sendgrid.com/v3/mail/send');
         curl_setopt_array($ch, [
