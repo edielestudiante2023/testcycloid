@@ -38,6 +38,48 @@ class ParticipantModel extends Model
         return $this->where('sesion_id', $sesionId)->countAllResults();
     }
 
+    /**
+     * Copia los participantes de una sesión anterior (de cualquier dinámica)
+     * hacia una sesión nueva, para no hacer que el mismo grupo se registre
+     * de cero en cada ejercicio. Copia solo los datos de la persona —
+     * equipo, rol, token e intro_visto_at siempre arrancan limpios en la
+     * sesión destino. Si alguien con el mismo documento ya está registrado
+     * en la sesión destino, se salta (evita duplicar si se corre dos veces).
+     *
+     * @return int cuántos participantes se copiaron
+     */
+    public function copiarDesdeOtraSesion(int $sesionOrigenId, int $sesionDestinoId): int
+    {
+        $origen = $this->where('sesion_id', $sesionOrigenId)->findAll();
+        if (empty($origen)) {
+            return 0;
+        }
+
+        $yaEnDestino = array_column($this->where('sesion_id', $sesionDestinoId)->findAll(), null, 'documento');
+
+        $copiados = 0;
+        foreach ($origen as $p) {
+            if (isset($yaEnDestino[$p['documento']])) {
+                continue;
+            }
+
+            $this->insert([
+                'sesion_id'              => $sesionDestinoId,
+                'nombre'                 => $p['nombre'],
+                'documento'              => $p['documento'],
+                'cargo'                  => $p['cargo'],
+                'email_corporativo'      => $p['email_corporativo'],
+                'email_personal'         => $p['email_personal'],
+                'whatsapp'               => $p['whatsapp'],
+                'tiene_personal_a_cargo' => $p['tiene_personal_a_cargo'],
+                'autorizo_datos'         => $p['autorizo_datos'],
+            ]);
+            $copiados++;
+        }
+
+        return $copiados;
+    }
+
     public function findByToken(string $token): ?array
     {
         return $this->select('participants.*, sesiones.token AS sesion_token, dinamicas.slug AS dinamica_slug')

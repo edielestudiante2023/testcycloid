@@ -97,13 +97,41 @@ class SesionesController extends BaseController
         }
 
         return view('sesiones/qr', [
-            'sesion'          => $sesion,
-            'registroUrl'     => $registroUrl,
-            'count'           => (new ParticipantModel())->contarRegistrados((int) $sesion['id']),
-            'progresoEquipos' => $progresoEquipos,
-            'participants'    => (new ParticipantModel())->porSesion((int) $sesion['id']),
-            'nombresRol'      => $this->nombresRolPorDinamica($sesion['dinamica_slug']),
+            'sesion'            => $sesion,
+            'registroUrl'       => $registroUrl,
+            'count'             => (new ParticipantModel())->contarRegistrados((int) $sesion['id']),
+            'progresoEquipos'   => $progresoEquipos,
+            'participants'      => (new ParticipantModel())->porSesion((int) $sesion['id']),
+            'nombresRol'        => $this->nombresRolPorDinamica($sesion['dinamica_slug']),
+            'sesionesRecientes' => empty($sesion['iniciada_at'])
+                ? (new SesionModel())->recientesConParticipantes((int) $sesion['id'])
+                : [],
+            'reciclados'        => (int) ($this->request->getGet('reciclados') ?? 0),
         ]);
+    }
+
+    /**
+     * Uso exclusivo del facilitador: copia los participantes ya registrados
+     * en OTRA sesión (de cualquier dinámica) hacia esta sesión, para no
+     * hacer que el mismo grupo se registre de cero en cada ejercicio.
+     * Equipo, rol y token siempre arrancan limpios en esta sesión.
+     */
+    public function reciclarParticipantes(string $token)
+    {
+        $sesion = (new SesionModel())->findByToken($token);
+        if (!$sesion || !empty($sesion['iniciada_at'])) {
+            return redirect()->to('/sesiones/qr/' . $token);
+        }
+
+        $sesionOrigenToken = (string) $this->request->getPost('sesion_origen');
+        $sesionOrigen = $sesionOrigenToken !== '' ? (new SesionModel())->findByToken($sesionOrigenToken) : null;
+
+        $copiados = 0;
+        if ($sesionOrigen) {
+            $copiados = (new ParticipantModel())->copiarDesdeOtraSesion((int) $sesionOrigen['id'], (int) $sesion['id']);
+        }
+
+        return redirect()->to('/sesiones/qr/' . $token . '?reciclados=' . $copiados);
     }
 
     /**

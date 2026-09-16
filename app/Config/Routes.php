@@ -22,6 +22,7 @@ $routes->group('sesiones', ['filter' => 'auth'], static function (RouteCollectio
     $routes->post('enviar/(:segment)', 'SesionesController::enviar/$1');
     $routes->post('cerrar/(:segment)', 'SesionesController::cerrar/$1');
     $routes->post('forzar-avance/(:segment)', 'SesionesController::forzarAvance/$1');
+    $routes->post('reciclar/(:segment)', 'SesionesController::reciclarParticipantes/$1');
     $routes->get('resultados/(:segment)', 'SesionesController::resultados/$1');
     $routes->get('consolidado/(:segment)', 'SesionesController::consolidado/$1');
     $routes->post('consolidado-enviar/(:segment)', 'SesionesController::enviarConsolidadoEmail/$1');

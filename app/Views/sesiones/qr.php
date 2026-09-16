@@ -26,6 +26,27 @@
     </div>
 
     <?php if (empty($sesion['iniciada_at'])): ?>
+        <?php if (!empty($sesionesRecientes)): ?>
+        <div class="card">
+            <h2>Reciclar participantes de otra sesión</h2>
+            <p class="muted">Si es el mismo grupo de personas que ya se registró en otro ejercicio, cópialos aquí en vez de pedirles que llenen el formulario de nuevo. Equipo y rol se vuelven a asignar desde cero para esta sesión.</p>
+            <?php if ($reciclados > 0): ?>
+                <p style="color:#1a7f37;"><?= (int) $reciclados ?> participante(s) copiado(s).</p>
+            <?php endif; ?>
+            <form method="post" action="<?= site_url('sesiones/reciclar/' . $sesion['token']) ?>">
+                <select name="sesion_origen" required>
+                    <option value="">Selecciona una sesión…</option>
+                    <?php foreach ($sesionesRecientes as $s): ?>
+                        <option value="<?= esc($s['token']) ?>">
+                            <?= esc($s['dinamica_nombre']) ?> — <?= esc($s['cliente']) ?> — <?= esc(substr((string) $s['created_at'], 0, 16)) ?> (<?= (int) $s['total_participantes'] ?> personas)
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+                <button type="submit" style="margin-top:12px;">Copiar participantes aquí</button>
+            </form>
+        </div>
+        <?php endif; ?>
+
         <div class="card">
             <h2>Registrados: <span id="contador"><?= (int) $count ?></span></h2>
             <p class="muted">Se actualiza solo cada 5 segundos. También puedes forzarlo.</p>

@@ -35,6 +35,27 @@ class SesionModel extends Model
         return $builder->get()->getResultArray();
     }
 
+    /**
+     * Sesiones recientes de CUALQUIER dinámica que ya tengan al menos un
+     * participante registrado — para el selector de "reciclar participantes
+     * de otra sesión". Excluye la sesión actual.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function recientesConParticipantes(int $excluirSesionId, int $limite = 30): array
+    {
+        $builder = $this->db->table('sesiones s');
+        $builder->select('s.id, s.token, s.cliente, s.created_at, d.nombre AS dinamica_nombre,
+            (SELECT COUNT(*) FROM participants p WHERE p.sesion_id = s.id) AS total_participantes')
+            ->join('dinamicas d', 'd.id = s.dinamica_id')
+            ->where('s.id !=', $excluirSesionId)
+            ->having('total_participantes >', 0)
+            ->orderBy('s.created_at', 'DESC')
+            ->limit($limite);
+
+        return $builder->get()->getResultArray();
+    }
+
     public function crearToken(): string
     {
         return bin2hex(random_bytes(6));
