@@ -78,12 +78,27 @@
             <h2>Ejercicio en curso</h2>
             <p class="muted">El correo ya se envió. El cronómetro es solo una referencia visual — tú decides cuándo cerrar.</p>
             <p style="font-size:2.5rem; font-weight:700; text-align:center;" id="cronometro">--:--</p>
-            <form method="post" action="<?= site_url('sesiones/cerrar/' . $sesion['token']) ?>"
-                  onsubmit="return confirm('¿Cerrar el ejercicio? Pasarás a la vista de resultados.');">
-                <button type="submit" class="btn-danger">Cerrar ejercicio</button>
+            <form method="post" action="<?= site_url('sesiones/cerrar/' . $sesion['token']) ?>" id="formCerrar"
+                  onsubmit="return confirmarCierre();">
+                <button type="submit" class="btn-danger" id="btnCerrar">Cerrar ejercicio</button>
             </form>
         </div>
+        <div id="overlayCierre" style="display:none; position:fixed; inset:0; background:rgba(27,31,39,0.85); color:#fff; z-index:9999; align-items:center; justify-content:center; flex-direction:column; text-align:center; padding:24px;">
+            <div style="width:48px; height:48px; border:4px solid rgba(255,255,255,0.3); border-top-color:#fff; border-radius:50%; animation:girar 0.8s linear infinite; margin-bottom:20px;"></div>
+            <p style="font-size:1.1rem; font-weight:600; margin:0 0 8px;">Cerrando el ejercicio…</p>
+            <p style="max-width:360px; margin:0; opacity:0.85;">Se está generando el análisis con inteligencia artificial. Puede tardar hasta un minuto — no cierres ni recargues esta pestaña.</p>
+        </div>
+        <style>@keyframes girar { to { transform: rotate(360deg); } }</style>
         <script>
+        function confirmarCierre() {
+            if (!confirm('¿Cerrar el ejercicio? Pasarás a la vista de resultados.')) {
+                return false;
+            }
+            document.getElementById('btnCerrar').disabled = true;
+            var overlay = document.getElementById('overlayCierre');
+            overlay.style.display = 'flex';
+            return true;
+        }
         var inicio = new Date(<?= json_encode(str_replace(' ', 'T', $sesion['iniciada_at']) . 'Z') ?>).getTime();
         var duracionMs = <?= (int) $sesion['duracion_min'] ?> * 60 * 1000;
         var el = document.getElementById('cronometro');
