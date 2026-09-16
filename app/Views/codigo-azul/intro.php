@@ -9,45 +9,65 @@
 </head>
 <body>
 <div class="wrap">
-    <div class="brand-header"><img src="<?= base_url('assets/img/cycloid-logo-azul.png?v=3') ?>" alt="Cycloid Talent"></div>
+    <img src="<?= base_url('assets/img/codigo-azul-hero.jpg') ?>" alt="Código Azul — una decisión con información incompleta" style="width:100%; height:auto; border-radius:12px; margin-bottom:16px; display:block;">
     <div class="card">
         <h1>Código Azul</h1>
 
-        <div class="confidential"><strong>Turno de la tarde. Hospital Regional Altamira.</strong>
+        <div class="confidential"><strong>Diecisiete minutos antes del Código Azul.</strong>
 
-La sala nunca está realmente en silencio.
+Nadie está corriendo.
 
-Hay un monitor marcando un ritmo constante. Pasos que entran y salen. Una conversación breve en el pasillo. El sonido de algo rodando sobre baldosa.
+Eso es importante.
 
-Nada de esto es una emergencia.
+El turno de la tarde en el Hospital Altamira transcurre con esa calma extraña que tienen los lugares donde nunca hay verdadero silencio.
 
-Todavía.
+Un monitor insiste en el mismo ritmo.
 
-Un paciente lleva horas bajo observación después de un procedimiento sin complicaciones. Los números se ven bien. El equipo se mueve con la calma de quien ya ha hecho esto muchas veces.
+Una puerta se abre.
 
-Pero cada persona en esta sala está mirando algo distinto.
+Ruedas sobre baldosa.
 
-Alguien vigila una pantalla.
+Alguien pregunta por un café que dejó enfriarse hace una hora.
 
-Alguien más espera un resultado que todavía no llega.
+En la habitación, un paciente descansa después de un procedimiento que salió como debía.
 
-Alguien acaba de notar algo que no termina de encajar con lo que vio hace un minuto.
+Todo parece estar donde tiene que estar.
 
-Y alguien, en algún punto, va a tener que unir todo eso antes de que sea demasiado tarde para que la unión sirva de algo.
+Hasta que algo cambia.
 
-Nadie tiene la historia completa.
+No lo suficiente para activar una alarma.
 
-Cada quien observa apenas un fragmento: una tendencia, un número, una sensación que todavía no tiene nombre.
+No lo suficiente para detener la sala.
 
-El médico tratante no está en la sala en este momento.
+Apenas lo suficiente para que una persona mire dos veces.
 
-Va y viene. Escucha lo que le dicen cuando vuelve. Decide con lo que el equipo logra ponerle enfrente.
+Unos metros más allá, alguien espera un resultado que debería haber llegado.
 
-Y ahí está el problema real:
+Otra persona observa algo distinto.
 
-<strong>lo que tú ves no es lo que ven los demás.</strong>
+Todavía no sabe si importa.
 
-Y lo que ellos ven, tú no lo sabes.</div>
+Ninguno sabe lo que saben los otros.
+
+Y durante algunos minutos, eso no parece peligroso.
+
+El monitor continúa.
+
+Bip.
+
+Bip.
+
+Bip.
+
+El médico tratante está fuera de la habitación.
+
+Cuando vuelva, tendrá que decidir.
+
+Pero no decidirá con todo lo que está ocurriendo.
+
+Decidirá con algo mucho más frágil:
+
+<strong>lo que el equipo consiga decirle.</strong></div>
 
         <h2>Tu equipo</h2>
         <table>
@@ -62,33 +82,33 @@ Y lo que ellos ven, tú no lo sabes.</div>
             </tbody>
         </table>
 
-        <div class="confidential" style="margin-top:20px;">En los próximos minutos vas a recibir tu propia pieza de esta situación.
+        <div class="confidential" style="margin-top:20px;">A partir de ahora, vas a estar dentro de esa habitación.
 
-Algunas piezas van a parecer urgentes desde el principio. Otras quizá no… hasta que ya no haya tiempo de ignorarlas.
+No vas a saberlo todo.
 
-<strong>Nadie en esta sala tiene el panorama completo.</strong>
+Vas a recibir una sola parte de la historia.
 
-Ni siquiera tú.
+Quizá al principio parezca pequeña.
 
-Vas a tener que leer lo que llegue a tu turno, decidir qué tan seguro estás de lo que ves, y decirlo — o guardártelo.
+Quizá alguien vea algo que contradiga lo que tú estás viendo.
 
-Pero recuerda algo:
+Quizá estés completamente seguro de algo…
 
-<strong>ver algo no significa que los demás también lo hayan visto.</strong>
+hasta que tengas que decirlo frente a los demás.
 
-<strong>Pensarlo no significa haberlo dicho con claridad.</strong>
+Habla con tu equipo.
 
-Y decirlo…
+Escúchalos.
 
-<strong>no significa que alguien lo haya tomado en cuenta.</strong>
+Decide qué sostienes.
 
-Cuando estés listo, entra.
+Pero no muestres tu pantalla.
 
-A partir de este momento, lo que sabes es confidencial.
+No reveles tu rol.
 
-<strong>No muestres tu pantalla. No compartas tu rol.</strong>
+Porque en esta historia hay una diferencia enorme entre <strong>ver</strong>, <strong>pensar</strong>, <strong>decir</strong> y <strong>lograr que alguien escuche</strong>.
 
-La situación ya está en marcha. Y lo que el equipo decida va a depender de lo que ustedes sean capaces de poner sobre la mesa a tiempo.</div>
+Y todavía faltan diecisiete minutos.</div>
 
         <a class="btn" href="<?= site_url('codigo-azul/rol/' . $participant['token']) ?>">Ver mi rol</a>
     </div>
