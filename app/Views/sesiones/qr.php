@@ -102,38 +102,103 @@
         <?php if (!empty($progresoEquipos)): ?>
         <div class="card">
             <h2>Progreso por equipo</h2>
-            <table>
+            <table id="tablaProgreso">
                 <thead><tr><th>Equipo</th><th>Momento</th><th>Respondieron</th><th></th></tr></thead>
-                <tbody>
-                <?php foreach ($progresoEquipos as $p): ?>
-                    <tr>
-                        <td>
-                            <?= esc($p['team']) ?>
-                            <?php if (!empty($p['pendientes'])): ?>
-                            <details style="margin-top:4px;">
-                                <summary style="cursor:pointer; color:#c0392b; font-size:0.8rem;">Faltan <?= count($p['pendientes']) ?></summary>
-                                <div class="muted" style="font-size:0.8rem; margin-top:4px;"><?= esc(implode(', ', $p['pendientes'])) ?></div>
-                            </details>
-                            <?php endif; ?>
-                        </td>
-                        <td><?= $p['terminado'] ? 'Terminado' : ($p['momentoActual'] . ' de ' . $p['totalMomentos']) ?></td>
-                        <td><?= (int) $p['respondidos'] ?> / <?= (int) $p['totalEquipo'] ?></td>
-                        <td>
-                            <?php if (!$p['terminado'] && $p['respondidos'] < $p['totalEquipo']): ?>
-                            <form method="post" action="<?= site_url('sesiones/forzar-avance/' . $sesion['token']) ?>"
-                                  onsubmit="return confirm('¿Forzar el avance del <?= esc($p['team'], 'js') ?>? A quien no haya respondido se le va a registrar una respuesta vacía en este momento.');" style="margin:0;">
-                                <input type="hidden" name="team" value="<?= esc($p['team']) ?>">
-                                <input type="hidden" name="momento" value="<?= (int) $p['momentoActual'] ?>">
-                                <button type="submit" style="margin:0; padding:6px 12px; font-size:0.85rem;">Forzar avance</button>
-                            </form>
-                            <?php endif; ?>
-                        </td>
-                    </tr>
-                <?php endforeach; ?>
-                </tbody>
+                <tbody id="progresoBody"></tbody>
             </table>
         </div>
-        <script>setInterval(function () { window.location.reload(); }, 8000);</script>
+        <script>
+        var progresoUrl = <?= json_encode(site_url('sesiones/progreso/' . $sesion['token'])) ?>;
+        var forzarAvanceUrl = <?= json_encode(site_url('sesiones/forzar-avance/' . $sesion['token'])) ?>;
+
+        function celda(texto) {
+            var td = document.createElement('td');
+            td.textContent = texto;
+            return td;
+        }
+
+        function pintarFila(eq, abiertos) {
+            var tr = document.createElement('tr');
+
+            var tdEquipo = document.createElement('td');
+            tdEquipo.appendChild(document.createTextNode(eq.team));
+            if (eq.pendientes && eq.pendientes.length > 0) {
+                var det = document.createElement('details');
+                det.style.marginTop = '4px';
+                if (abiertos.indexOf(eq.team) !== -1) {
+                    det.open = true;
+                }
+                var sum = document.createElement('summary');
+                sum.style.cursor = 'pointer';
+                sum.style.color = '#c0392b';
+                sum.style.fontSize = '0.8rem';
+                sum.textContent = 'Faltan ' + eq.pendientes.length;
+                det.appendChild(sum);
+                var div = document.createElement('div');
+                div.className = 'muted';
+                div.style.fontSize = '0.8rem';
+                div.style.marginTop = '4px';
+                div.textContent = eq.pendientes.join(', ');
+                det.appendChild(div);
+                tdEquipo.appendChild(det);
+            }
+            tr.appendChild(tdEquipo);
+
+            tr.appendChild(celda(eq.terminado ? 'Terminado' : (eq.momentoActual + ' de ' + eq.totalMomentos)));
+            tr.appendChild(celda(eq.respondidos + ' / ' + eq.totalEquipo));
+
+            var tdAccion = document.createElement('td');
+            if (!eq.terminado && eq.respondidos < eq.totalEquipo) {
+                var form = document.createElement('form');
+                form.method = 'post';
+                form.action = forzarAvanceUrl;
+                form.style.margin = '0';
+                form.addEventListener('submit', function (ev) {
+                    if (!confirm('¿Forzar el avance del ' + eq.team + '? A quien no haya respondido se le va a registrar una respuesta vacía en este momento.')) {
+                        ev.preventDefault();
+                    }
+                });
+                var inTeam = document.createElement('input');
+                inTeam.type = 'hidden'; inTeam.name = 'team'; inTeam.value = eq.team;
+                var inMomento = document.createElement('input');
+                inMomento.type = 'hidden'; inMomento.name = 'momento'; inMomento.value = eq.momentoActual;
+                var btn = document.createElement('button');
+                btn.type = 'submit';
+                btn.style.margin = '0'; btn.style.padding = '6px 12px'; btn.style.fontSize = '0.85rem';
+                btn.textContent = 'Forzar avance';
+                form.appendChild(inTeam);
+                form.appendChild(inMomento);
+                form.appendChild(btn);
+                tdAccion.appendChild(form);
+            }
+            tr.appendChild(tdAccion);
+
+            return tr;
+        }
+
+        function actualizarProgreso() {
+            var body = document.getElementById('progresoBody');
+            var abiertos = Array.prototype.map.call(body.querySelectorAll('tr'), function (tr) {
+                var det = tr.querySelector('details');
+                return (det && det.open) ? tr.dataset.team : null;
+            }).filter(Boolean);
+
+            fetch(progresoUrl)
+                .then(function (r) { return r.json(); })
+                .then(function (d) {
+                    body.innerHTML = '';
+                    (d.equipos || []).forEach(function (eq) {
+                        var fila = pintarFila(eq, abiertos);
+                        fila.dataset.team = eq.team;
+                        body.appendChild(fila);
+                    });
+                })
+                .catch(function () {});
+        }
+
+        actualizarProgreso();
+        setInterval(actualizarProgreso, 8000);
+        </script>
         <?php endif; ?>
     <?php endif; ?>
 

@@ -19,6 +19,7 @@ $routes->group('sesiones', ['filter' => 'auth'], static function (RouteCollectio
     $routes->post('crear', 'SesionesController::crear');
     $routes->get('qr/(:segment)', 'SesionesController::qr/$1');
     $routes->get('contador/(:segment)', 'SesionesController::contador/$1');
+    $routes->get('progreso/(:segment)', 'SesionesController::progreso/$1');
     $routes->post('enviar/(:segment)', 'SesionesController::enviar/$1');
     $routes->post('cerrar/(:segment)', 'SesionesController::cerrar/$1');
     $routes->post('forzar-avance/(:segment)', 'SesionesController::forzarAvance/$1');

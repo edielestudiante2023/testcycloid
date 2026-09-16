@@ -87,20 +87,11 @@ class SesionesController extends BaseController
 
         $registroUrl = site_url($sesion['dinamica_slug'] . '/registro/' . $sesion['token']);
 
-        $progresoEquipos = [];
-        if ($sesion['dinamica_slug'] === 'el-meridian' && !empty($sesion['iniciada_at'])) {
-            $progresoEquipos = (new RespuestaMomentoModel())->progresoPorEquipo((int) $sesion['id']);
-        } elseif ($sesion['dinamica_slug'] === 'volver-a-casa' && !empty($sesion['iniciada_at'])) {
-            $progresoEquipos = (new VolverACasaAnalisisModel())->progresoPorEquipo((int) $sesion['id']);
-        } elseif ($sesion['dinamica_slug'] === 'codigo-azul' && !empty($sesion['iniciada_at'])) {
-            $progresoEquipos = (new CodigoAzulAnalisisModel())->progresoPorEquipo((int) $sesion['id']);
-        }
-
         return view('sesiones/qr', [
             'sesion'            => $sesion,
             'registroUrl'       => $registroUrl,
             'count'             => (new ParticipantModel())->contarRegistrados((int) $sesion['id']),
-            'progresoEquipos'   => $progresoEquipos,
+            'progresoEquipos'   => $this->progresoEquiposDe($sesion),
             'participants'      => (new ParticipantModel())->porSesion((int) $sesion['id']),
             'nombresRol'        => $this->nombresRolPorDinamica($sesion['dinamica_slug']),
             'sesionesRecientes' => empty($sesion['iniciada_at'])
@@ -108,6 +99,38 @@ class SesionesController extends BaseController
                 : [],
             'reciclados'        => (int) ($this->request->getGet('reciclados') ?? 0),
         ]);
+    }
+
+    /**
+     * @return array<int, array{team: string, totalEquipo: int, momentoActual: int, respondidos: int, totalMomentos: int, terminado: bool, pendientes: array<int, string>}>
+     */
+    private function progresoEquiposDe(array $sesion): array
+    {
+        if (empty($sesion['iniciada_at'])) {
+            return [];
+        }
+
+        return match ($sesion['dinamica_slug']) {
+            'el-meridian'   => (new RespuestaMomentoModel())->progresoPorEquipo((int) $sesion['id']),
+            'volver-a-casa' => (new VolverACasaAnalisisModel())->progresoPorEquipo((int) $sesion['id']),
+            'codigo-azul'   => (new CodigoAzulAnalisisModel())->progresoPorEquipo((int) $sesion['id']),
+            default         => [],
+        };
+    }
+
+    /**
+     * Endpoint de polling para la pantalla de control del facilitador — le
+     * permite refrescar la tabla "Progreso por equipo" sin recargar toda la
+     * página (y así no perder el colapse abierto de "Faltan N").
+     */
+    public function progreso(string $token)
+    {
+        $sesion = (new SesionModel())->findByToken($token);
+        if (!$sesion) {
+            return $this->response->setJSON(['equipos' => []]);
+        }
+
+        return $this->response->setJSON(['equipos' => $this->progresoEquiposDe($sesion)]);
     }
 
     /**
