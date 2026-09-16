@@ -10,9 +10,10 @@ class SendGridMailer
 {
     /**
      * @param string[] $toEmails
+     * @param string[] $bccEmails copia oculta — no aparece para los destinatarios de "to"
      * @return array{ok: bool, status: int, body: string}
      */
-    public function send(array $toEmails, string $subject, string $html): array
+    public function send(array $toEmails, string $subject, string $html, array $bccEmails = []): array
     {
         $secretsFile = APPPATH . 'Config/Mail.' . ENVIRONMENT . '.php';
         if (!is_file($secretsFile)) {
@@ -25,10 +26,17 @@ class SendGridMailer
             return ['ok' => false, 'status' => 0, 'body' => 'Sin destinatarios'];
         }
 
+        $bccEmails = array_values(array_unique(array_filter($bccEmails, static fn ($e) => $e !== '' && !in_array($e, $toEmails, true))));
+
+        $personalization = [
+            'to' => array_map(static fn ($e) => ['email' => $e], $toEmails),
+        ];
+        if (!empty($bccEmails)) {
+            $personalization['bcc'] = array_map(static fn ($e) => ['email' => $e], $bccEmails);
+        }
+
         $payload = [
-            'personalizations' => [[
-                'to' => array_map(static fn ($e) => ['email' => $e], $toEmails),
-            ]],
+            'personalizations' => [$personalization],
             'from'    => ['email' => $cfg['from_email'], 'name' => $cfg['from_name']],
             'subject' => $subject,
             'content' => [['type' => 'text/html', 'value' => $html]],

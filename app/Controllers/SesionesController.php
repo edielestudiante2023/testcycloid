@@ -246,10 +246,12 @@ class SesionesController extends BaseController
                 ]);
 
                 $correosEquipo = array_map(static fn ($m) => $m['email_corporativo'], $miembros);
+                $adminEmail = session('usuario_email');
                 $mailer->send(
                     $correosEquipo,
                     $sesion['dinamica_nombre'] . ' — conoce a tu equipo (' . $team . ')',
-                    $htmlEquipo
+                    $htmlEquipo,
+                    $adminEmail ? [$adminEmail] : []
                 );
             }
         }

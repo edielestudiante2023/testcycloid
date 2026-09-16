@@ -107,7 +107,15 @@
                 <tbody>
                 <?php foreach ($progresoEquipos as $p): ?>
                     <tr>
-                        <td><?= esc($p['team']) ?></td>
+                        <td>
+                            <?= esc($p['team']) ?>
+                            <?php if (!empty($p['pendientes'])): ?>
+                            <details style="margin-top:4px;">
+                                <summary style="cursor:pointer; color:#c0392b; font-size:0.8rem;">Faltan <?= count($p['pendientes']) ?></summary>
+                                <div class="muted" style="font-size:0.8rem; margin-top:4px;"><?= esc(implode(', ', $p['pendientes'])) ?></div>
+                            </details>
+                            <?php endif; ?>
+                        </td>
                         <td><?= $p['terminado'] ? 'Terminado' : ($p['momentoActual'] . ' de ' . $p['totalMomentos']) ?></td>
                         <td><?= (int) $p['respondidos'] ?> / <?= (int) $p['totalEquipo'] ?></td>
                         <td>

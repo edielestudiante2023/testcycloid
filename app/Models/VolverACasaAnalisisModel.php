@@ -48,6 +48,15 @@ class VolverACasaAnalisisModel extends RespuestaMomentoModel
             $momentoActual = $this->momentoActualDelEquipo($sesionId, $team, $totalEquipo, $totalMomentos);
             $terminado = $momentoActual > $totalMomentos;
 
+            $pendientes = [];
+            if (!$terminado) {
+                foreach ($integrantes as $integrante) {
+                    if (!$this->respuestaDe((int) $integrante['id'], $momentoActual)) {
+                        $pendientes[] = $integrante['nombre'];
+                    }
+                }
+            }
+
             $progreso[] = [
                 'team'          => $team,
                 'totalEquipo'   => $totalEquipo,
@@ -55,6 +64,7 @@ class VolverACasaAnalisisModel extends RespuestaMomentoModel
                 'respondidos'   => $terminado ? $totalEquipo : $this->respondidosEnMomento($sesionId, $team, $momentoActual),
                 'totalMomentos' => $totalMomentos,
                 'terminado'     => $terminado,
+                'pendientes'    => $pendientes,
             ];
         }
 
