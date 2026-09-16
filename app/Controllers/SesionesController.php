@@ -172,6 +172,8 @@ class SesionesController extends BaseController
             (new SesionModel())->update((int) $sesion['id'], ['iniciada_at' => date('Y-m-d H:i:s')]);
 
             $mailer = new SendGridMailer();
+            $nombresRol = $this->nombresRolPorDinamica($sesion['dinamica_slug']);
+
             foreach ($asignados as $p) {
                 $rolUrl = site_url($sesion['dinamica_slug'] . '/rol/' . $p['token']);
                 $introUrl = match ($sesion['dinamica_slug']) {
@@ -190,6 +192,36 @@ class SesionesController extends BaseController
                     [$p['email_corporativo'], $p['email_personal']],
                     $sesion['dinamica_nombre'] . ' — tu rol para el ejercicio de hoy',
                     $html
+                );
+            }
+
+            // Correo de equipo: uno por equipo, con TODOS los correos corporativos
+            // del equipo en el "para" (para que puedan responder a todos y
+            // organizarse por correo de inmediato). No lleva ningún enlace de rol
+            // — eso sigue siendo confidencial y solo va en el correo individual.
+            $porEquipo = [];
+            foreach ($asignados as $p) {
+                $porEquipo[$p['team']][] = $p;
+            }
+
+            foreach ($porEquipo as $team => $miembros) {
+                $roster = array_map(static fn ($m) => [
+                    'nombre' => $m['nombre'],
+                    'rol'    => $nombresRol[$m['role']] ?? $m['role'],
+                ], $miembros);
+
+                $htmlEquipo = view('emails/equipo', [
+                    'dinamicaNombre' => $sesion['dinamica_nombre'],
+                    'cliente'        => $sesion['cliente'],
+                    'team'           => $team,
+                    'miembros'       => $roster,
+                ]);
+
+                $correosEquipo = array_map(static fn ($m) => $m['email_corporativo'], $miembros);
+                $mailer->send(
+                    $correosEquipo,
+                    $sesion['dinamica_nombre'] . ' — conoce a tu equipo (' . $team . ')',
+                    $htmlEquipo
                 );
             }
         }
