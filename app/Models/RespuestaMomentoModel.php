@@ -58,6 +58,7 @@ class RespuestaMomentoModel extends Model
             ->join('participants p', 'p.id = rm.participant_id')
             ->where('p.sesion_id', $sesionId)
             ->where('p.team', $team)
+            ->where('p.activo', 1)
             ->where('rm.momento', $momento)
             ->countAllResults();
     }
@@ -90,7 +91,7 @@ class RespuestaMomentoModel extends Model
         helper('el_meridian');
 
         $participantModel = new ParticipantModel();
-        $miembros = $participantModel->where('sesion_id', $sesionId)->where('team IS NOT NULL')->findAll();
+        $miembros = $participantModel->where('sesion_id', $sesionId)->where('team IS NOT NULL')->where('activo', 1)->findAll();
 
         $porEquipo = [];
         foreach ($miembros as $miembro) {
@@ -145,7 +146,7 @@ class RespuestaMomentoModel extends Model
         $momentosDefinidos = el_meridian_momentos();
 
         $participantModel = new ParticipantModel();
-        $miembros = $participantModel->where('sesion_id', $sesionId)->where('team IS NOT NULL')->findAll();
+        $miembros = $participantModel->where('sesion_id', $sesionId)->where('team IS NOT NULL')->where('activo', 1)->findAll();
 
         $porEquipo = [];
         foreach ($miembros as $miembro) {
@@ -223,7 +224,7 @@ class RespuestaMomentoModel extends Model
         $momentosDefinidos = el_meridian_momentos();
 
         $participantModel = new ParticipantModel();
-        $miembros = $participantModel->where('sesion_id', $sesionId)->where('team IS NOT NULL')->findAll();
+        $miembros = $participantModel->where('sesion_id', $sesionId)->where('team IS NOT NULL')->where('activo', 1)->findAll();
 
         $porEquipo = [];
         foreach ($miembros as $miembro) {
@@ -375,7 +376,7 @@ class RespuestaMomentoModel extends Model
     private function respuestasPorPersonaConValores(int $sesionId): array
     {
         $participantModel = new ParticipantModel();
-        $miembros = $participantModel->where('sesion_id', $sesionId)->where('team IS NOT NULL')->findAll();
+        $miembros = $participantModel->where('sesion_id', $sesionId)->where('team IS NOT NULL')->where('activo', 1)->findAll();
 
         $porEquipo = [];
         foreach ($miembros as $miembro) {
@@ -481,7 +482,7 @@ class RespuestaMomentoModel extends Model
     public function forzarAvance(int $sesionId, string $team, int $momento): int
     {
         $participantModel = new ParticipantModel();
-        $miembros = $participantModel->where('sesion_id', $sesionId)->where('team', $team)->findAll();
+        $miembros = $participantModel->where('sesion_id', $sesionId)->where('team', $team)->where('activo', 1)->findAll();
 
         $forzados = 0;
         foreach ($miembros as $miembro) {

@@ -99,6 +99,7 @@ class SesionesController extends BaseController
                 : [],
             'reciclados'        => (int) ($this->request->getGet('reciclados') ?? 0),
             'reenviado'         => (bool) $this->request->getGet('reenviado'),
+            'baja'              => (bool) $this->request->getGet('baja'),
         ]);
     }
 
@@ -304,6 +305,39 @@ class SesionesController extends BaseController
         }
 
         return redirect()->to('/sesiones/qr/' . $token . '?reenviado=1');
+    }
+
+    /**
+     * Uso exclusivo del facilitador: si alguien tuvo que irse del ejercicio
+     * (emergencia, cita médica) sin terminarlo, esto lo saca del conteo de
+     * "totalEquipo" para que su equipo pueda seguir avanzando en los
+     * momentos que faltan sin quedar esperándolo para siempre. No borra
+     * nada de lo que ya respondió.
+     */
+    public function darDeBajaParticipante(string $token)
+    {
+        $sesion = (new SesionModel())->findByToken($token);
+        $participantId = (int) $this->request->getPost('participant_id');
+        $participant = $participantId > 0 ? (new ParticipantModel())->find($participantId) : null;
+
+        if ($sesion && $participant && (int) $participant['sesion_id'] === (int) $sesion['id']) {
+            (new ParticipantModel())->darDeBaja($participantId);
+        }
+
+        return redirect()->to('/sesiones/qr/' . $token . '?baja=1');
+    }
+
+    public function reactivarParticipante(string $token)
+    {
+        $sesion = (new SesionModel())->findByToken($token);
+        $participantId = (int) $this->request->getPost('participant_id');
+        $participant = $participantId > 0 ? (new ParticipantModel())->find($participantId) : null;
+
+        if ($sesion && $participant && (int) $participant['sesion_id'] === (int) $sesion['id']) {
+            (new ParticipantModel())->reactivar($participantId);
+        }
+
+        return redirect()->to('/sesiones/qr/' . $token);
     }
 
     /**

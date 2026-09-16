@@ -223,13 +223,16 @@
         <?php if (!empty($reenviado)): ?>
             <p style="color:#1a7f37;">Correo reenviado.</p>
         <?php endif; ?>
+        <?php if (!empty($baja)): ?>
+            <p style="color:#c0392b;">Participante dado de baja — su equipo ya no lo va a esperar en los próximos momentos.</p>
+        <?php endif; ?>
         <table id="tablaParticipantes" class="display" style="width:100%;">
             <thead>
-                <tr><th>Nombre</th><th>Documento</th><th>Cargo</th><th>Equipo</th><th>Rol</th><th>Enlace</th></tr>
+                <tr><th>Nombre</th><th>Documento</th><th>Cargo</th><th>Equipo</th><th>Rol</th><th>Enlace</th><th>Estado</th></tr>
             </thead>
             <tbody>
             <?php foreach ($participants as $p): ?>
-                <tr>
+                <tr<?= empty($p['activo']) ? ' style="opacity:0.5;"' : '' ?>>
                     <td><?= esc($p['nombre']) ?></td>
                     <td><?= esc($p['documento']) ?></td>
                     <td><?= esc($p['cargo']) ?></td>
@@ -245,6 +248,21 @@
                             </form>
                         <?php else: ?>
                             <span class="muted">—</span>
+                        <?php endif; ?>
+                    </td>
+                    <td>
+                        <?php if (!empty($p['activo'])): ?>
+                            <form method="post" action="<?= site_url('sesiones/dar-de-baja/' . $sesion['token']) ?>"
+                                  onsubmit="return confirm('¿Dar de baja a <?= esc($p['nombre'], 'js') ?>? Su equipo va a dejar de esperarlo para avanzar. No borra lo que ya respondió.');" style="margin:0;">
+                                <input type="hidden" name="participant_id" value="<?= (int) $p['id'] ?>">
+                                <button type="submit" class="btn-danger" style="margin:0; padding:4px 8px; font-size:0.75rem; width:auto;">Dar de baja</button>
+                            </form>
+                        <?php else: ?>
+                            <span class="muted" style="display:block; margin-bottom:4px;">De baja</span>
+                            <form method="post" action="<?= site_url('sesiones/reactivar/' . $sesion['token']) ?>" style="margin:0;">
+                                <input type="hidden" name="participant_id" value="<?= (int) $p['id'] ?>">
+                                <button type="submit" style="margin:0; padding:4px 8px; font-size:0.75rem; width:auto;">Reactivar</button>
+                            </form>
                         <?php endif; ?>
                     </td>
                 </tr>

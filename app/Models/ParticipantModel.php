@@ -11,7 +11,7 @@ class ParticipantModel extends Model
     protected $allowedFields = [
         'sesion_id', 'nombre', 'documento', 'cargo', 'email_corporativo', 'email_personal',
         'whatsapp', 'tiene_personal_a_cargo', 'autorizo_datos', 'mostro_liderazgo',
-        'team', 'role', 'token', 'intro_visto_at',
+        'team', 'role', 'token', 'intro_visto_at', 'activo',
     ];
     protected $useTimestamps = true;
     protected $returnType    = 'array';
@@ -96,9 +96,19 @@ class ParticipantModel extends Model
      *
      * @return array<int, array<string, mixed>> participantes recién asignados
      */
+    public function darDeBaja(int $participantId): void
+    {
+        $this->update($participantId, ['activo' => 0]);
+    }
+
+    public function reactivar(int $participantId): void
+    {
+        $this->update($participantId, ['activo' => 1]);
+    }
+
     public function iniciarEjercicio(int $sesionId, int $teamSize): array
     {
-        $pendientes = $this->where('sesion_id', $sesionId)->where('team', null)->findAll();
+        $pendientes = $this->where('sesion_id', $sesionId)->where('team', null)->where('activo', 1)->findAll();
         if (empty($pendientes)) {
             return [];
         }

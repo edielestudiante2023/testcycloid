@@ -30,7 +30,7 @@ class VolverACasaAnalisisModel extends RespuestaMomentoModel
         helper('volver_a_casa');
 
         $participantModel = new ParticipantModel();
-        $miembros = $participantModel->where('sesion_id', $sesionId)->where('team IS NOT NULL')->findAll();
+        $miembros = $participantModel->where('sesion_id', $sesionId)->where('team IS NOT NULL')->where('activo', 1)->findAll();
 
         $porEquipo = [];
         foreach ($miembros as $miembro) {
@@ -81,7 +81,7 @@ class VolverACasaAnalisisModel extends RespuestaMomentoModel
         $momentosDefinidos = volver_a_casa_momentos();
 
         $participantModel = new ParticipantModel();
-        $miembros = $participantModel->where('sesion_id', $sesionId)->where('team IS NOT NULL')->findAll();
+        $miembros = $participantModel->where('sesion_id', $sesionId)->where('team IS NOT NULL')->where('activo', 1)->findAll();
 
         $porEquipo = [];
         foreach ($miembros as $miembro) {
@@ -154,7 +154,7 @@ class VolverACasaAnalisisModel extends RespuestaMomentoModel
         $momentosDefinidos = volver_a_casa_momentos();
 
         $participantModel = new ParticipantModel();
-        $miembros = $participantModel->where('sesion_id', $sesionId)->where('team IS NOT NULL')->findAll();
+        $miembros = $participantModel->where('sesion_id', $sesionId)->where('team IS NOT NULL')->where('activo', 1)->findAll();
 
         $porEquipo = [];
         foreach ($miembros as $miembro) {
@@ -289,7 +289,7 @@ class VolverACasaAnalisisModel extends RespuestaMomentoModel
     private function respuestasPorPersonaConValores(int $sesionId): array
     {
         $participantModel = new ParticipantModel();
-        $miembros = $participantModel->where('sesion_id', $sesionId)->where('team IS NOT NULL')->findAll();
+        $miembros = $participantModel->where('sesion_id', $sesionId)->where('team IS NOT NULL')->where('activo', 1)->findAll();
 
         $porEquipo = [];
         foreach ($miembros as $miembro) {

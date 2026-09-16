@@ -144,6 +144,7 @@ class VolverACasaController extends BaseController
         $totalEquipo = (new ParticipantModel())
             ->where('sesion_id', $participant['sesion_id'])
             ->where('team', $participant['team'])
+            ->where('activo', 1)
             ->countAllResults();
 
         $momentoActual = $respuestaModel->momentoActualDelEquipo(
@@ -214,6 +215,7 @@ class VolverACasaController extends BaseController
         $totalEquipo = (new ParticipantModel())
             ->where('sesion_id', $participant['sesion_id'])
             ->where('team', $participant['team'])
+            ->where('activo', 1)
             ->countAllResults();
         $respondidos = $respuestaModel->respondidosEnMomento(
             (int) $participant['sesion_id'],

@@ -30,7 +30,7 @@ class CodigoAzulAnalisisModel extends RespuestaMomentoModel
         helper('codigo_azul');
 
         $participantModel = new ParticipantModel();
-        $miembros = $participantModel->where('sesion_id', $sesionId)->where('team IS NOT NULL')->findAll();
+        $miembros = $participantModel->where('sesion_id', $sesionId)->where('team IS NOT NULL')->where('activo', 1)->findAll();
 
         $porEquipo = [];
         foreach ($miembros as $miembro) {
@@ -81,7 +81,7 @@ class CodigoAzulAnalisisModel extends RespuestaMomentoModel
         $momentosDefinidos = codigo_azul_momentos();
 
         $participantModel = new ParticipantModel();
-        $miembros = $participantModel->where('sesion_id', $sesionId)->where('team IS NOT NULL')->findAll();
+        $miembros = $participantModel->where('sesion_id', $sesionId)->where('team IS NOT NULL')->where('activo', 1)->findAll();
 
         $porEquipo = [];
         foreach ($miembros as $miembro) {
@@ -154,7 +154,7 @@ class CodigoAzulAnalisisModel extends RespuestaMomentoModel
         $momentosDefinidos = codigo_azul_momentos();
 
         $participantModel = new ParticipantModel();
-        $miembros = $participantModel->where('sesion_id', $sesionId)->where('team IS NOT NULL')->findAll();
+        $miembros = $participantModel->where('sesion_id', $sesionId)->where('team IS NOT NULL')->where('activo', 1)->findAll();
 
         $porEquipo = [];
         foreach ($miembros as $miembro) {
@@ -346,7 +346,7 @@ class CodigoAzulAnalisisModel extends RespuestaMomentoModel
     private function respuestasPorPersonaConValores(int $sesionId): array
     {
         $participantModel = new ParticipantModel();
-        $miembros = $participantModel->where('sesion_id', $sesionId)->where('team IS NOT NULL')->findAll();
+        $miembros = $participantModel->where('sesion_id', $sesionId)->where('team IS NOT NULL')->where('activo', 1)->findAll();
 
         $porEquipo = [];
         foreach ($miembros as $miembro) {
