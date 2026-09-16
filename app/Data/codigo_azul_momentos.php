@@ -419,7 +419,7 @@ return [
     ],
 
     'E' => [
-        'nombre' => 'Ojo de Sala',
+        'nombre' => 'Pulso de la Sala',
         'momentos' => [
             1 => [
                 'narrativa' => "No estás mirando una pantalla.\n\n"

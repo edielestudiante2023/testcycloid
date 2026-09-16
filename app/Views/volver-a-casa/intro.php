@@ -9,7 +9,7 @@
 </head>
 <body>
 <div class="wrap">
-    <div class="brand-header"><img src="<?= base_url('assets/img/cycloid-logo-azul.png?v=3') ?>" alt="Cycloid Talent"></div>
+    <img src="<?= base_url('assets/img/volver-a-casa-hero.jpg') ?>" alt="Volver a Casa — información distinta, una sola decisión" style="width:100%; height:auto; border-radius:12px; margin-bottom:16px; display:block;">
     <div class="card">
         <h1>Volver a Casa</h1>
 
