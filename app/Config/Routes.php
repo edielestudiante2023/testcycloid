@@ -32,6 +32,11 @@ $routes->group('sesiones', ['filter' => 'auth'], static function (RouteCollectio
     $routes->get('(:segment)', 'SesionesController::listar/$1');
 });
 
+$routes->group('chat', static function (RouteCollection $routes) {
+    $routes->post('enviar/(:segment)', 'ChatController::enviar/$1');
+    $routes->get('mensajes/(:segment)', 'ChatController::mensajes/$1');
+});
+
 $routes->group('liderazgo-comunicacion', static function (RouteCollection $routes) {
     $routes->get('registro/(:segment)', 'LiderazgoComunicacionController::registro/$1');
     $routes->post('asignar', 'LiderazgoComunicacionController::asignar');

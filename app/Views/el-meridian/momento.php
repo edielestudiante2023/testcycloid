@@ -29,6 +29,8 @@
             <button type="submit">Responder</button>
         </form>
     </div>
+
+    <?= view('partials/chat', ['participant' => $participant]) ?>
 </div>
 </body>
 </html>

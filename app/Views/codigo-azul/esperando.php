@@ -17,6 +17,8 @@
         <p style="font-size:1.6rem; font-weight:700; text-align:center;" id="contador"><?= (int) $respondidos ?> / <?= (int) $totalEquipo ?></p>
         <p class="muted">Aprovecha para seguir hablando con tu equipo.</p>
     </div>
+
+    <?= view('partials/chat', ['participant' => $participant]) ?>
 </div>
 <script>
 function revisar() {
