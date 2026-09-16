@@ -98,6 +98,7 @@ class SesionesController extends BaseController
                 ? (new SesionModel())->recientesConParticipantes((int) $sesion['id'])
                 : [],
             'reciclados'        => (int) ($this->request->getGet('reciclados') ?? 0),
+            'reenviado'         => (bool) $this->request->getGet('reenviado'),
         ]);
     }
 
@@ -226,24 +227,7 @@ class SesionesController extends BaseController
             $nombresRol = $this->nombresRolPorDinamica($sesion['dinamica_slug']);
 
             foreach ($asignados as $p) {
-                $rolUrl = site_url($sesion['dinamica_slug'] . '/rol/' . $p['token']);
-                $introUrl = match ($sesion['dinamica_slug']) {
-                    'el-meridian' => site_url('el-meridian/intro/' . $p['token']),
-                    'volver-a-casa' => site_url('volver-a-casa/intro/' . $p['token']),
-                    'codigo-azul' => site_url('codigo-azul/intro/' . $p['token']),
-                    default => null,
-                };
-                $html = view('emails/rol', [
-                    'nombre'         => $p['nombre'],
-                    'rolUrl'         => $rolUrl,
-                    'introUrl'       => $introUrl,
-                    'dinamicaNombre' => $sesion['dinamica_nombre'],
-                ]);
-                $mailer->send(
-                    [$p['email_corporativo'], $p['email_personal']],
-                    $sesion['dinamica_nombre'] . ' — tu rol para el ejercicio de hoy',
-                    $html
-                );
+                $this->enviarCorreoRol($sesion, $p, $mailer);
             }
 
             // Correo de equipo: uno por equipo, con TODOS los correos corporativos
@@ -280,6 +264,46 @@ class SesionesController extends BaseController
         }
 
         return redirect()->to('/sesiones/qr/' . $token . '?enviado=1');
+    }
+
+    private function enviarCorreoRol(array $sesion, array $p, SendGridMailer $mailer): void
+    {
+        $rolUrl = site_url($sesion['dinamica_slug'] . '/rol/' . $p['token']);
+        $introUrl = match ($sesion['dinamica_slug']) {
+            'el-meridian' => site_url('el-meridian/intro/' . $p['token']),
+            'volver-a-casa' => site_url('volver-a-casa/intro/' . $p['token']),
+            'codigo-azul' => site_url('codigo-azul/intro/' . $p['token']),
+            default => null,
+        };
+        $html = view('emails/rol', [
+            'nombre'         => $p['nombre'],
+            'rolUrl'         => $rolUrl,
+            'introUrl'       => $introUrl,
+            'dinamicaNombre' => $sesion['dinamica_nombre'],
+        ]);
+        $mailer->send(
+            [$p['email_corporativo'], $p['email_personal']],
+            $sesion['dinamica_nombre'] . ' — tu rol para el ejercicio de hoy',
+            $html
+        );
+    }
+
+    /**
+     * Uso exclusivo del facilitador: reenvía el correo individual del rol a
+     * UNA sola persona (le falló el correo, lo tiene en spam, se equivocó de
+     * dirección) sin tener que repetir el envío de todo el equipo.
+     */
+    public function reenviarRol(string $token)
+    {
+        $sesion = (new SesionModel())->findByToken($token);
+        $participantId = (int) $this->request->getPost('participant_id');
+        $participant = $participantId > 0 ? (new ParticipantModel())->find($participantId) : null;
+
+        if ($sesion && $participant && (int) $participant['sesion_id'] === (int) $sesion['id'] && !empty($participant['token'])) {
+            $this->enviarCorreoRol($sesion, $participant, new SendGridMailer());
+        }
+
+        return redirect()->to('/sesiones/qr/' . $token . '?reenviado=1');
     }
 
     /**

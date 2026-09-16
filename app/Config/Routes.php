@@ -21,6 +21,7 @@ $routes->group('sesiones', ['filter' => 'auth'], static function (RouteCollectio
     $routes->get('contador/(:segment)', 'SesionesController::contador/$1');
     $routes->get('progreso/(:segment)', 'SesionesController::progreso/$1');
     $routes->post('enviar/(:segment)', 'SesionesController::enviar/$1');
+    $routes->post('reenviar-rol/(:segment)', 'SesionesController::reenviarRol/$1');
     $routes->post('cerrar/(:segment)', 'SesionesController::cerrar/$1');
     $routes->post('forzar-avance/(:segment)', 'SesionesController::forzarAvance/$1');
     $routes->post('reciclar/(:segment)', 'SesionesController::reciclarParticipantes/$1');

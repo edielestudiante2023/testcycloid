@@ -205,9 +205,12 @@
     <?php if (!empty($participants)): ?>
     <div class="card">
         <h2>Participantes registrados</h2>
+        <?php if (!empty($reenviado)): ?>
+            <p style="color:#1a7f37;">Correo reenviado.</p>
+        <?php endif; ?>
         <table id="tablaParticipantes" class="display" style="width:100%;">
             <thead>
-                <tr><th>Nombre</th><th>Documento</th><th>Cargo</th><th>Equipo</th><th>Rol</th></tr>
+                <tr><th>Nombre</th><th>Documento</th><th>Cargo</th><th>Equipo</th><th>Rol</th><th>Enlace</th></tr>
             </thead>
             <tbody>
             <?php foreach ($participants as $p): ?>
@@ -217,6 +220,18 @@
                     <td><?= esc($p['cargo']) ?></td>
                     <td><?= esc($p['team'] ?? 'Sin asignar') ?></td>
                     <td><?= esc($p['role'] ? ($nombresRol[$p['role']] ?? $p['role']) : '—') ?></td>
+                    <td>
+                        <?php if (!empty($p['token'])): ?>
+                            <?php $rolUrl = site_url($sesion['dinamica_slug'] . '/rol/' . $p['token']); ?>
+                            <button type="button" class="btnCopiarEnlace" data-url="<?= esc($rolUrl) ?>" style="margin:0 0 4px; padding:4px 8px; font-size:0.75rem; width:auto;">Copiar enlace</button>
+                            <form method="post" action="<?= site_url('sesiones/reenviar-rol/' . $sesion['token']) ?>" style="margin:0;">
+                                <input type="hidden" name="participant_id" value="<?= (int) $p['id'] ?>">
+                                <button type="submit" style="margin:0; padding:4px 8px; font-size:0.75rem; width:auto;">Reenviar correo</button>
+                            </form>
+                        <?php else: ?>
+                            <span class="muted">—</span>
+                        <?php endif; ?>
+                    </td>
                 </tr>
             <?php endforeach; ?>
             </tbody>
@@ -233,6 +248,15 @@
                 zeroRecords: 'Sin resultados',
                 emptyTable: 'Todavía no hay participantes registrados'
             }
+        });
+        document.querySelectorAll('.btnCopiarEnlace').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                navigator.clipboard.writeText(btn.dataset.url).then(function () {
+                    var original = btn.textContent;
+                    btn.textContent = '¡Copiado!';
+                    setTimeout(function () { btn.textContent = original; }, 1500);
+                });
+            });
         });
     });
     </script>
