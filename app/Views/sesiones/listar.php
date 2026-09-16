@@ -38,6 +38,9 @@
                         <td>
                             <a href="<?= site_url('sesiones/qr/' . $s['token']) ?>">QR</a> ·
                             <a href="<?= site_url('sesiones/resultados/' . $s['token']) ?>">Resultados</a>
+                            <?php if (!empty($clientesConsolidables) && in_array($s['cliente'], $clientesConsolidables, true)): ?>
+                                · <a href="<?= site_url('sesiones/consolidado/' . $s['token']) ?>">Ver consolidado</a>
+                            <?php endif; ?>
                         </td>
                     </tr>
                 <?php endforeach; ?>

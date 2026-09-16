@@ -81,8 +81,26 @@ public/assets/      logo y favicon de Cycloid Talent, style.css compartido
 - `app/Config/Mail.{development|production}.php` — API key de SendGrid + remitente.
 
 En producción estos tres archivos ya están creados directamente en el servidor
-(`/www/wwwroot/test/`), con permisos `640`, owner `www:www`. Las credenciales de origen están en
-`D:\DESARROLLO\KEYS\sql.txt` (MySQL producción) y `D:\DESARROLLO\KEYS\sendrid.txt` (API key).
+(`/www/wwwroot/test/`), con permisos `640`, owner `www:www`. **Las credenciales no están en el
+repo ni en este documento** — si hace falta reconstruirlas, pedírselas directamente al
+desarrollador (no improvisar valores). Una vez obtenidas, guardarlas para futuras sesiones en
+`D:\DESARROLLO\KEYS\sql.txt` (MySQL producción) y `D:\DESARROLLO\KEYS\sendrid.txt` (API key) —
+son archivos locales fuera del repo, nunca commitearlos ni pegar su contenido en este documento.
+
+## Cómo levantar el proyecto en local
+
+1. Clonar el repo y correr `composer install`.
+2. Crear `.env` a partir del ejemplo del repo (`env`), apuntando al MySQL local de XAMPP (`root`
+   sin password) y con `CI_ENVIRONMENT = development`.
+3. Crear en local una base de datos vacía llamada `testcycloidtalent` (por ejemplo desde
+   phpMyAdmin) — **no hay que armar el esquema a mano**, lo hacen las migraciones.
+4. Correr `php spark migrate` para crear todas las tablas.
+5. Correr `php spark db:seed AdminSeeder` para el usuario admin de prueba — usa
+   `app/Config/SeedAdmin.development.php`; si no existe, crearlo con datos de prueba propios,
+   **nunca** con las credenciales de producción.
+6. Crear `app/Config/Mail.development.php` con una API key de SendGrid de pruebas si se necesita
+   probar el envío real de correos (si se deja sin configurar, el resto del flujo funciona igual).
+7. Abrir `http://localhost/test/` — debería mostrar el login.
 
 ## Cómo desplegar un cambio
 

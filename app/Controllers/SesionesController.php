@@ -3,11 +3,15 @@
 namespace App\Controllers;
 
 use App\Libraries\KimiAnalisis;
+use App\Libraries\KimiAnalisisCodigoAzul;
+use App\Libraries\KimiAnalisisVolverACasa;
 use App\Libraries\SendGridMailer;
+use App\Models\CodigoAzulAnalisisModel;
 use App\Models\DinamicaModel;
 use App\Models\ParticipantModel;
 use App\Models\RespuestaMomentoModel;
 use App\Models\SesionModel;
+use App\Models\VolverACasaAnalisisModel;
 
 class SesionesController extends BaseController
 {
@@ -18,9 +22,16 @@ class SesionesController extends BaseController
             return redirect()->to('/');
         }
 
+        $clientesConsolidables = [];
+        $modeloConsolidable = $this->analisisModelConsolidable($slug);
+        if ($modeloConsolidable) {
+            $clientesConsolidables = $modeloConsolidable->clientesConsolidables((int) $dinamica['id']);
+        }
+
         return view('sesiones/listar', [
             'dinamica' => $dinamica,
             'sesiones' => (new SesionModel())->porDinamica((int) $dinamica['id']),
+            'clientesConsolidables' => $clientesConsolidables,
         ]);
     }
 
@@ -79,6 +90,10 @@ class SesionesController extends BaseController
         $progresoEquipos = [];
         if ($sesion['dinamica_slug'] === 'el-meridian' && !empty($sesion['iniciada_at'])) {
             $progresoEquipos = (new RespuestaMomentoModel())->progresoPorEquipo((int) $sesion['id']);
+        } elseif ($sesion['dinamica_slug'] === 'volver-a-casa' && !empty($sesion['iniciada_at'])) {
+            $progresoEquipos = (new VolverACasaAnalisisModel())->progresoPorEquipo((int) $sesion['id']);
+        } elseif ($sesion['dinamica_slug'] === 'codigo-azul' && !empty($sesion['iniciada_at'])) {
+            $progresoEquipos = (new CodigoAzulAnalisisModel())->progresoPorEquipo((int) $sesion['id']);
         }
 
         return view('sesiones/qr', [
@@ -108,6 +123,22 @@ class SesionesController extends BaseController
             $nombres = [];
             foreach (liderazgo_comunicacion_role_cards() as $rol => $info) {
                 $nombres[$rol] = preg_replace('/^TARJETA\s+\w+\s*—\s*/u', '', $info['title']);
+            }
+            return $nombres;
+        }
+
+        if ($dinamicaSlug === 'volver-a-casa') {
+            $nombres = [];
+            foreach (volver_a_casa_momentos() as $rol => $info) {
+                $nombres[$rol] = $info['nombre'];
+            }
+            return $nombres;
+        }
+
+        if ($dinamicaSlug === 'codigo-azul') {
+            $nombres = [];
+            foreach (codigo_azul_momentos() as $rol => $info) {
+                $nombres[$rol] = $info['nombre'];
             }
             return $nombres;
         }
@@ -143,9 +174,12 @@ class SesionesController extends BaseController
             $mailer = new SendGridMailer();
             foreach ($asignados as $p) {
                 $rolUrl = site_url($sesion['dinamica_slug'] . '/rol/' . $p['token']);
-                $introUrl = $sesion['dinamica_slug'] === 'el-meridian'
-                    ? site_url('el-meridian/intro/' . $p['token'])
-                    : null;
+                $introUrl = match ($sesion['dinamica_slug']) {
+                    'el-meridian' => site_url('el-meridian/intro/' . $p['token']),
+                    'volver-a-casa' => site_url('volver-a-casa/intro/' . $p['token']),
+                    'codigo-azul' => site_url('codigo-azul/intro/' . $p['token']),
+                    default => null,
+                };
                 $html = view('emails/rol', [
                     'nombre'         => $p['nombre'],
                     'rolUrl'         => $rolUrl,
@@ -171,7 +205,7 @@ class SesionesController extends BaseController
     public function forzarAvance(string $token)
     {
         $sesion = (new SesionModel())->findByToken($token);
-        if (!$sesion || $sesion['dinamica_slug'] !== 'el-meridian') {
+        if (!$sesion || !in_array($sesion['dinamica_slug'], ['el-meridian', 'volver-a-casa', 'codigo-azul'], true)) {
             return redirect()->to('/sesiones/qr/' . $token);
         }
 
@@ -198,6 +232,14 @@ class SesionesController extends BaseController
                 $analisisPorEquipo = $this->generarAnalisisElMeridian((int) $sesion['id']);
                 $sesionModel->update((int) $sesion['id'], ['analisis_ia' => json_encode($analisisPorEquipo, JSON_UNESCAPED_UNICODE)]);
                 $this->enviarResumenElMeridian($sesion, $analisisPorEquipo);
+            } elseif ($sesion['dinamica_slug'] === 'volver-a-casa') {
+                $analisisPorEquipo = $this->generarAnalisisVolverACasa((int) $sesion['id']);
+                $sesionModel->update((int) $sesion['id'], ['analisis_ia' => json_encode($analisisPorEquipo, JSON_UNESCAPED_UNICODE)]);
+                $this->enviarResumenVolverACasa($sesion, $analisisPorEquipo);
+            } elseif ($sesion['dinamica_slug'] === 'codigo-azul') {
+                $analisisPorEquipo = $this->generarAnalisisCodigoAzul((int) $sesion['id']);
+                $sesionModel->update((int) $sesion['id'], ['analisis_ia' => json_encode($analisisPorEquipo, JSON_UNESCAPED_UNICODE)]);
+                $this->enviarResumenCodigoAzul($sesion, $analisisPorEquipo);
             }
         }
 
@@ -269,6 +311,136 @@ class SesionesController extends BaseController
         );
     }
 
+    /**
+     * @return array<string, string|null> team => texto del analisis (o null si Kimi no respondio);
+     *         más la clave especial "__global__" con el análisis consolidado de todos los equipos
+     *         (solo si hay 2 o más equipos).
+     */
+    private function generarAnalisisVolverACasa(int $sesionId): array
+    {
+        $respuestaModel = new VolverACasaAnalisisModel();
+        $porEquipo = $respuestaModel->respuestasPorPersona($sesionId);
+        $radiografiaEnLista = $respuestaModel->radiografiaPorEquipo($sesionId);
+        $radiografiaPorEquipo = [];
+        foreach ($radiografiaEnLista as $r) {
+            $radiografiaPorEquipo[$r['team']] = $r;
+        }
+
+        $kimi = new KimiAnalisisVolverACasa();
+        $analisis = [];
+        foreach ($porEquipo as $equipo) {
+            $analisis[$equipo['team']] = $kimi->analizarEquipo($equipo, $radiografiaPorEquipo[$equipo['team']] ?? []);
+        }
+
+        $analisis['__global__'] = $kimi->analizarGlobal($radiografiaEnLista, $respuestaModel->radiografiaGlobal($sesionId));
+
+        return $analisis;
+    }
+
+    private function enviarResumenVolverACasa(array $sesion, array $analisisPorEquipo): void
+    {
+        $destino = session('usuario_email');
+        if (!$destino) {
+            return;
+        }
+
+        $respuestaModel = new VolverACasaAnalisisModel();
+        $equipos = $respuestaModel->resultadosPorEquipo((int) $sesion['id']);
+        if (empty($equipos)) {
+            return;
+        }
+
+        $radiografiaPorEquipo = [];
+        foreach ($respuestaModel->radiografiaPorEquipo((int) $sesion['id']) as $r) {
+            $radiografiaPorEquipo[$r['team']] = $r;
+        }
+
+        foreach ($equipos as &$eq) {
+            $eq['analisisIa'] = $analisisPorEquipo[$eq['team']] ?? null;
+            $eq['radiografia'] = $radiografiaPorEquipo[$eq['team']] ?? null;
+        }
+        unset($eq);
+
+        $html = view('emails/volver_a_casa_resumen', [
+            'sesion' => $sesion,
+            'equipos' => $equipos,
+            'analisisGlobal' => $analisisPorEquipo['__global__'] ?? null,
+            'radiografiaGlobal' => $respuestaModel->radiografiaGlobal((int) $sesion['id']),
+            'resultadosUrl' => site_url('sesiones/resultados/' . $sesion['token']),
+        ]);
+
+        (new SendGridMailer())->send(
+            [$destino],
+            'Volver a Casa — resumen de "' . $sesion['cliente'] . '"',
+            $html
+        );
+    }
+
+    /**
+     * @return array<string, string|null> team => texto del analisis (o null si Kimi no respondio);
+     *         más la clave especial "__global__" con el análisis consolidado de todos los equipos
+     *         (solo si hay 2 o más equipos).
+     */
+    private function generarAnalisisCodigoAzul(int $sesionId): array
+    {
+        $respuestaModel = new CodigoAzulAnalisisModel();
+        $porEquipo = $respuestaModel->respuestasPorPersona($sesionId);
+        $radiografiaEnLista = $respuestaModel->radiografiaPorEquipo($sesionId);
+        $radiografiaPorEquipo = [];
+        foreach ($radiografiaEnLista as $r) {
+            $radiografiaPorEquipo[$r['team']] = $r;
+        }
+
+        $kimi = new KimiAnalisisCodigoAzul();
+        $analisis = [];
+        foreach ($porEquipo as $equipo) {
+            $analisis[$equipo['team']] = $kimi->analizarEquipo($equipo, $radiografiaPorEquipo[$equipo['team']] ?? []);
+        }
+
+        $analisis['__global__'] = $kimi->analizarGlobal($radiografiaEnLista, $respuestaModel->radiografiaGlobal($sesionId));
+
+        return $analisis;
+    }
+
+    private function enviarResumenCodigoAzul(array $sesion, array $analisisPorEquipo): void
+    {
+        $destino = session('usuario_email');
+        if (!$destino) {
+            return;
+        }
+
+        $respuestaModel = new CodigoAzulAnalisisModel();
+        $equipos = $respuestaModel->resultadosPorEquipo((int) $sesion['id']);
+        if (empty($equipos)) {
+            return;
+        }
+
+        $radiografiaPorEquipo = [];
+        foreach ($respuestaModel->radiografiaPorEquipo((int) $sesion['id']) as $r) {
+            $radiografiaPorEquipo[$r['team']] = $r;
+        }
+
+        foreach ($equipos as &$eq) {
+            $eq['analisisIa'] = $analisisPorEquipo[$eq['team']] ?? null;
+            $eq['radiografia'] = $radiografiaPorEquipo[$eq['team']] ?? null;
+        }
+        unset($eq);
+
+        $html = view('emails/codigo_azul_resumen', [
+            'sesion' => $sesion,
+            'equipos' => $equipos,
+            'analisisGlobal' => $analisisPorEquipo['__global__'] ?? null,
+            'radiografiaGlobal' => $respuestaModel->radiografiaGlobal((int) $sesion['id']),
+            'resultadosUrl' => site_url('sesiones/resultados/' . $sesion['token']),
+        ]);
+
+        (new SendGridMailer())->send(
+            [$destino],
+            'Código Azul — resumen de "' . $sesion['cliente'] . '"',
+            $html
+        );
+    }
+
     public function resultados(string $token)
     {
         $sesion = (new SesionModel())->findByToken($token);
@@ -300,6 +472,54 @@ class SesionesController extends BaseController
             ]);
         }
 
+        if ($sesion['dinamica_slug'] === 'volver-a-casa') {
+            $respuestaModel = new VolverACasaAnalisisModel();
+            $equipos = $respuestaModel->resultadosPorEquipo((int) $sesion['id']);
+            $analisisPorEquipo = json_decode((string) ($sesion['analisis_ia'] ?? ''), true) ?? [];
+
+            $radiografiaPorEquipo = [];
+            foreach ($respuestaModel->radiografiaPorEquipo((int) $sesion['id']) as $r) {
+                $radiografiaPorEquipo[$r['team']] = $r;
+            }
+
+            foreach ($equipos as &$eq) {
+                $eq['analisisIa'] = $analisisPorEquipo[$eq['team']] ?? null;
+                $eq['radiografia'] = $radiografiaPorEquipo[$eq['team']] ?? null;
+            }
+            unset($eq);
+
+            return view('volver-a-casa/resultados', [
+                'sesion' => $sesion,
+                'equipos' => $equipos,
+                'analisisGlobal' => $analisisPorEquipo['__global__'] ?? null,
+                'radiografiaGlobal' => $respuestaModel->radiografiaGlobal((int) $sesion['id']),
+            ]);
+        }
+
+        if ($sesion['dinamica_slug'] === 'codigo-azul') {
+            $respuestaModel = new CodigoAzulAnalisisModel();
+            $equipos = $respuestaModel->resultadosPorEquipo((int) $sesion['id']);
+            $analisisPorEquipo = json_decode((string) ($sesion['analisis_ia'] ?? ''), true) ?? [];
+
+            $radiografiaPorEquipo = [];
+            foreach ($respuestaModel->radiografiaPorEquipo((int) $sesion['id']) as $r) {
+                $radiografiaPorEquipo[$r['team']] = $r;
+            }
+
+            foreach ($equipos as &$eq) {
+                $eq['analisisIa'] = $analisisPorEquipo[$eq['team']] ?? null;
+                $eq['radiografia'] = $radiografiaPorEquipo[$eq['team']] ?? null;
+            }
+            unset($eq);
+
+            return view('codigo-azul/resultados', [
+                'sesion' => $sesion,
+                'equipos' => $equipos,
+                'analisisGlobal' => $analisisPorEquipo['__global__'] ?? null,
+                'radiografiaGlobal' => $respuestaModel->radiografiaGlobal((int) $sesion['id']),
+            ]);
+        }
+
         $participants = (new ParticipantModel())->porSesion((int) $sesion['id']);
         $byTeam = [];
         foreach ($participants as $p) {
@@ -313,6 +533,147 @@ class SesionesController extends BaseController
             'answers'      => liderazgo_comunicacion_role_answers(),
             'rolBaseUrl'   => site_url($sesion['dinamica_slug'] . '/rol/'),
         ]);
+    }
+
+    /**
+     * Los dinámicas que soportan el consolidado entre sesiones cerradas del
+     * mismo cliente (a través del tiempo). Cada una mapea a su propio
+     * modelo de análisis, librería de Kimi, vista y nombre legible — los
+     * tres siguen exactamente la misma forma (ver VolverACasaAnalisisModel/
+     * CodigoAzulAnalisisModel).
+     *
+     * @return array{modelo: object, kimi: object, vista: string, vistaEmail: string, nombre: string}|null
+     */
+    private function configConsolidable(string $dinamicaSlug): ?array
+    {
+        return match ($dinamicaSlug) {
+            'volver-a-casa' => [
+                'modelo'     => new VolverACasaAnalisisModel(),
+                'kimi'       => new KimiAnalisisVolverACasa(),
+                'vista'      => 'volver-a-casa/consolidado',
+                'vistaEmail' => 'emails/volver_a_casa_consolidado',
+                'nombre'     => 'Volver a Casa',
+            ],
+            'codigo-azul' => [
+                'modelo'     => new CodigoAzulAnalisisModel(),
+                'kimi'       => new KimiAnalisisCodigoAzul(),
+                'vista'      => 'codigo-azul/consolidado',
+                'vistaEmail' => 'emails/codigo_azul_consolidado',
+                'nombre'     => 'Código Azul',
+            ],
+            default => null,
+        };
+    }
+
+    /**
+     * Atajo usado por listar() para saber si vale la pena calcular los
+     * clientes consolidables de esta dinámica.
+     */
+    private function analisisModelConsolidable(string $dinamicaSlug): ?object
+    {
+        return $this->configConsolidable($dinamicaSlug)['modelo'] ?? null;
+    }
+
+    /**
+     * Consolidado entre sesiones CERRADAS del mismo cliente, a través del
+     * tiempo (no confundir con el resumen global de resultados(), que
+     * consolida equipos dentro de UNA sola sesión). Cualquier token de una
+     * sesión de ese cliente sirve como punto de entrada — se listan todas
+     * las que compartan el mismo texto en "cliente".
+     */
+    public function consolidado(string $token)
+    {
+        $sesion = (new SesionModel())->findByToken($token);
+        $config = $sesion ? $this->configConsolidable($sesion['dinamica_slug']) : null;
+        if (!$config) {
+            return redirect()->to('/');
+        }
+
+        [$sesionesCliente, $porSesion, $radiografiaConsolidada] = $this->datosConsolidadoCliente($sesion, $config);
+
+        return view($config['vista'], [
+            'sesion'                 => $sesion,
+            'sesionesCliente'        => $sesionesCliente,
+            'porSesion'              => $porSesion,
+            'radiografiaConsolidada' => $radiografiaConsolidada,
+            'analisisConsolidado'    => null,
+            'correoEnviado'          => false,
+        ]);
+    }
+
+    /**
+     * Uso exclusivo del facilitador: genera (con Kimi) y envía por correo el
+     * análisis consolidado del cliente. Es una acción explícita del
+     * facilitador, no algo que se recalcule solo con entrar a mirar.
+     */
+    public function enviarConsolidadoEmail(string $token)
+    {
+        $sesion = (new SesionModel())->findByToken($token);
+        $config = $sesion ? $this->configConsolidable($sesion['dinamica_slug']) : null;
+        if (!$config) {
+            return redirect()->to('/');
+        }
+
+        [$sesionesCliente, $porSesion, $radiografiaConsolidada] = $this->datosConsolidadoCliente($sesion, $config);
+
+        $analisisConsolidado = null;
+        if (count($sesionesCliente) >= 2) {
+            $analisisConsolidado = $config['kimi']->analizarConsolidadoCliente($porSesion, $radiografiaConsolidada);
+        }
+
+        $destino = session('usuario_email');
+        $correoEnviado = false;
+        if ($destino && count($sesionesCliente) >= 2) {
+            $html = view($config['vistaEmail'], [
+                'sesion'                 => $sesion,
+                'sesionesCliente'        => $sesionesCliente,
+                'radiografiaConsolidada' => $radiografiaConsolidada,
+                'analisisConsolidado'    => $analisisConsolidado,
+                'consolidadoUrl'         => site_url('sesiones/consolidado/' . $sesion['token']),
+            ]);
+
+            $resultado = (new SendGridMailer())->send(
+                [$destino],
+                $config['nombre'] . ' — consolidado de "' . $sesion['cliente'] . '" (' . count($sesionesCliente) . ' sesiones)',
+                $html
+            );
+            $correoEnviado = $resultado['ok'];
+        }
+
+        return view($config['vista'], [
+            'sesion'                 => $sesion,
+            'sesionesCliente'        => $sesionesCliente,
+            'porSesion'              => $porSesion,
+            'radiografiaConsolidada' => $radiografiaConsolidada,
+            'analisisConsolidado'    => $analisisConsolidado,
+            'correoEnviado'          => $correoEnviado,
+        ]);
+    }
+
+    /**
+     * @return array{0: array<int, array<string, mixed>>, 1: array<int, array{fecha: string, dimensiones: array<string, string>, escuchados: string}>, 2: array{dimensiones: array<string, string>, escuchados: string}}
+     */
+    private function datosConsolidadoCliente(array $sesion, array $config): array
+    {
+        $respuestaModel = $config['modelo'];
+        $sesionesCliente = $respuestaModel->sesionesCerradasPorCliente((int) $sesion['dinamica_id'], $sesion['cliente']);
+
+        $porSesion = [];
+        foreach ($sesionesCliente as $s) {
+            $radio = $respuestaModel->radiografiaGlobal((int) $s['id']);
+            $porSesion[] = [
+                'token'       => $s['token'],
+                'fecha'       => substr((string) $s['cerrada_at'], 0, 10),
+                'dimensiones' => $radio['dimensiones'] ?? [],
+                'escuchados'  => $radio['escuchados'] ?? '—',
+            ];
+        }
+
+        $radiografiaConsolidada = count($sesionesCliente) >= 2
+            ? $respuestaModel->radiografiaConsolidadaPorCliente(array_column($sesionesCliente, 'id'))
+            : [];
+
+        return [$sesionesCliente, $porSesion, $radiografiaConsolidada];
     }
 
     public function liderazgo(string $token)

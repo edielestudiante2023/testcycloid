@@ -3,21 +3,21 @@
 namespace App\Controllers;
 
 use App\Models\ParticipantModel;
-use App\Models\RespuestaMomentoModel;
 use App\Models\SesionModel;
+use App\Models\CodigoAzulAnalisisModel;
 
-class ElMeridianController extends BaseController
+class CodigoAzulController extends BaseController
 {
     public function registro(string $sesionToken)
     {
         $sesion = (new SesionModel())->findByToken($sesionToken);
-        if (!$sesion || $sesion['dinamica_slug'] !== 'el-meridian') {
+        if (!$sesion || $sesion['dinamica_slug'] !== 'codigo-azul') {
             return $this->response->setStatusCode(404)->setBody(
-                view('el-meridian/enlace_invalido')
+                view('codigo-azul/enlace_invalido')
             );
         }
 
-        return view('el-meridian/registro', [
+        return view('codigo-azul/registro', [
             'sesion' => $sesion,
             'sesionToken' => $sesionToken,
             'error'  => $this->request->getGet('error'),
@@ -29,11 +29,11 @@ class ElMeridianController extends BaseController
         $sesionToken = (string) $this->request->getPost('s');
         $sesion = (new SesionModel())->findByToken($sesionToken);
 
-        if (!$sesion || $sesion['dinamica_slug'] !== 'el-meridian') {
+        if (!$sesion || $sesion['dinamica_slug'] !== 'codigo-azul') {
             return $this->response->setStatusCode(404)->setBody('Sesión no válida.');
         }
 
-        $redir = '/el-meridian/registro/' . $sesionToken;
+        $redir = '/codigo-azul/registro/' . $sesionToken;
 
         $nombre = trim((string) $this->request->getPost('nombre'));
         $documento = trim((string) $this->request->getPost('documento'));
@@ -68,32 +68,32 @@ class ElMeridianController extends BaseController
             'autorizo_datos'         => 1,
         ]);
 
-        return redirect()->to('/el-meridian/registrado/' . $sesionToken);
+        return redirect()->to('/codigo-azul/registrado/' . $sesionToken);
     }
 
     public function registrado(string $sesionToken)
     {
         $sesion = (new SesionModel())->findByToken($sesionToken);
         if (!$sesion) {
-            return redirect()->to('/el-meridian/registro/' . $sesionToken);
+            return redirect()->to('/codigo-azul/registro/' . $sesionToken);
         }
 
-        return view('el-meridian/registrado');
+        return view('codigo-azul/registrado');
     }
 
     /**
-     * Pantalla de contexto, previa al rol: qué es El Meridián, a dónde va,
-     * quién más está en tu equipo y por qué salieron con retraso. No revela
-     * nada confidencial — solo lo que cualquiera a bordo ya sabría.
+     * Pantalla de contexto, previa al rol: qué es "Código Azul", qué acaba
+     * de pasar, quién más está en tu equipo. No revela nada confidencial —
+     * solo lo que cualquiera en el hospital ya sabría.
      */
     public function intro(string $participantToken)
     {
         $participant = (new ParticipantModel())->findByToken($participantToken);
         if (!$participant || !$participant['role']) {
-            return view('el-meridian/enlace_invalido');
+            return view('codigo-azul/enlace_invalido');
         }
 
-        $momentosDefinidos = el_meridian_momentos();
+        $momentosDefinidos = codigo_azul_momentos();
         $equipo = (new ParticipantModel())
             ->where('sesion_id', $participant['sesion_id'])
             ->where('team', $participant['team'])
@@ -112,7 +112,7 @@ class ElMeridianController extends BaseController
             (new ParticipantModel())->update((int) $participant['id'], ['intro_visto_at' => date('Y-m-d H:i:s')]);
         }
 
-        return view('el-meridian/intro', [
+        return view('codigo-azul/intro', [
             'participant' => $participant,
             'companeros'  => $companeros,
         ]);
@@ -127,20 +127,20 @@ class ElMeridianController extends BaseController
     {
         $participant = (new ParticipantModel())->findByToken($participantToken);
         if (!$participant || !$participant['role']) {
-            return view('el-meridian/enlace_invalido');
+            return view('codigo-azul/enlace_invalido');
         }
 
         if (empty($participant['intro_visto_at'])) {
-            return redirect()->to('/el-meridian/intro/' . $participantToken);
+            return redirect()->to('/codigo-azul/intro/' . $participantToken);
         }
 
-        $momentos = el_meridian_momentos()[$participant['role']]['momentos'] ?? [];
+        $momentos = codigo_azul_momentos()[$participant['role']]['momentos'] ?? [];
         $totalMomentos = count($momentos);
         if ($totalMomentos === 0) {
-            return view('el-meridian/enlace_invalido');
+            return view('codigo-azul/enlace_invalido');
         }
 
-        $respuestaModel = new RespuestaMomentoModel();
+        $respuestaModel = new CodigoAzulAnalisisModel();
         $totalEquipo = (new ParticipantModel())
             ->where('sesion_id', $participant['sesion_id'])
             ->where('team', $participant['team'])
@@ -154,7 +154,7 @@ class ElMeridianController extends BaseController
         );
 
         if ($momentoActual > $totalMomentos) {
-            return view('el-meridian/cierre', ['participant' => $participant]);
+            return view('codigo-azul/cierre', ['participant' => $participant]);
         }
 
         $yaRespondio = $respuestaModel->respuestaDe((int) $participant['id'], $momentoActual);
@@ -165,7 +165,7 @@ class ElMeridianController extends BaseController
                 $momentoActual
             );
 
-            return view('el-meridian/esperando', [
+            return view('codigo-azul/esperando', [
                 'participant'   => $participant,
                 'momentoActual' => $momentoActual,
                 'totalMomentos' => $totalMomentos,
@@ -174,7 +174,7 @@ class ElMeridianController extends BaseController
             ]);
         }
 
-        return view('el-meridian/momento', [
+        return view('codigo-azul/momento', [
             'participant'   => $participant,
             'momentoActual' => $momentoActual,
             'totalMomentos' => $totalMomentos,
@@ -186,22 +186,21 @@ class ElMeridianController extends BaseController
     {
         $participant = (new ParticipantModel())->findByToken($participantToken);
         if (!$participant || !$participant['role']) {
-            return view('el-meridian/enlace_invalido');
+            return view('codigo-azul/enlace_invalido');
         }
 
         $momento = (int) $this->request->getPost('momento');
         $respuesta = (string) $this->request->getPost('respuesta');
 
         if ($momento > 0 && $respuesta !== '') {
-            (new RespuestaMomentoModel())->guardar((int) $participant['id'], $momento, $respuesta);
+            (new CodigoAzulAnalisisModel())->guardar((int) $participant['id'], $momento, $respuesta);
         }
 
-        return redirect()->to('/el-meridian/rol/' . $participantToken);
+        return redirect()->to('/codigo-azul/rol/' . $participantToken);
     }
 
     /**
-     * Endpoint de polling para la pantalla de espera: le dice al celular si
-     * su equipo ya completó el momento actual, sin recargar toda la vista.
+     * Endpoint de polling para la pantalla de espera.
      */
     public function estado(string $participantToken)
     {
@@ -211,7 +210,7 @@ class ElMeridianController extends BaseController
         }
 
         $momento = (int) $this->request->getGet('momento');
-        $respuestaModel = new RespuestaMomentoModel();
+        $respuestaModel = new CodigoAzulAnalisisModel();
         $totalEquipo = (new ParticipantModel())
             ->where('sesion_id', $participant['sesion_id'])
             ->where('team', $participant['team'])

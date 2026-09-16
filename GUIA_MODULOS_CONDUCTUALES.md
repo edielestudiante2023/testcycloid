@@ -5,6 +5,15 @@ nueva del mismo tipo que **El Meridián**: una historia que provoca decisiones
 observables, en vez de preguntarle a la persona directamente cómo es o cómo
 actuaría. Úsalo como punto de partida cada vez que quieras un módulo nuevo.
 
+Módulos construidos hasta ahora con esta arquitectura: **El Meridián**
+(naufragio ficticio), **Volver a Casa** (emergencia en una misión espacial
+ficticia) y **Código Azul** (equipo de emergencias en un hospital ficticio,
+`app/Data/codigo_azul_momentos.php` / `CodigoAzulAnalisisModel` /
+`KimiAnalisisCodigoAzul` / `CodigoAzulController`) — este último reemplaza en
+la práctica a la dinámica deprecada "Liderazgo y Comunicación" (coordinación
+bajo presión con roles secretos), construida antes de llegar a esta
+metodología.
+
 ## Qué es esto, en términos técnicos
 
 El nombre correcto de este género es **análisis conductual basado en
@@ -125,6 +134,30 @@ créala en paralelo a El Meridián, sin tocar sus archivos.
 QR → registro → confirmación → correo con enlace de **intro** (contexto +
 lista real del equipo) → enlace de **rol** (momentos secuenciales, con
 pantalla de "esperando a tu equipo" entre cada uno) → pantalla de cierre.
+
+### 2.1 Forzar la lectura del intro (gate obligatorio, no opcional)
+
+El correo de rol (`app/Views/emails/rol.php`) manda dos enlaces: uno
+secundario al intro y uno primario, más grande, directo al rol. Si no se
+hace nada más, ese botón grande deja que cualquiera se salte el intro por
+completo — y el intro es donde vive el contexto y la advertencia de
+confidencialidad, no un adorno.
+
+**Este gate es obligatorio, no un detalle opcional del diseño:**
+
+- La tabla `participants` tiene una columna `intro_visto_at` (nullable).
+- El controlador del módulo marca esa columna la primera vez que el
+  participante entra a `intro()`.
+- `rol()` revisa esa columna al principio: si sigue vacía, redirige a
+  `intro/{token}` en vez de mostrar el momento — sin importar qué enlace
+  usó la persona para llegar ahí (correo, marcador guardado, reenvío).
+- Después de esa primera vez, entra directo a `rol` sin fricción — el gate
+  es "una vez sí o sí", no en cada visita.
+
+Esto se descubrió como hueco al construir el segundo módulo de este tipo
+("Volver a Casa") y se corrigió retroactivamente también en El Meridián —
+inclúyelo desde el diseño en cualquier módulo nuevo, no lo dejes para
+después.
 
 ## 3. Diseñar las dimensiones cuantitativas
 
@@ -255,7 +288,122 @@ anónimos — es una decisión de negocio, no técnica, y depende de qué autori
 la gente al registrarse. Si hay duda, empieza sin nombres (solo rol) y súbelo
 a nombres reales solo con autorización explícita.
 
-## 5. Checklist para arrancar un módulo nuevo
+## 5. Resumen consolidado entre varios equipos (opcional)
+
+Una sesión puede tener más de un equipo (si se registra más gente que el
+tamaño de equipo configurado, la asignación automática crea "Equipo 2",
+"Equipo 3", etc. sin que haya que programar nada extra — ver sección 2). Si
+tu módulo va a usarse con grupos grandes, vale la pena dar también una vista
+consolidada de **toda la sesión**, no solo equipo por equipo.
+
+### 5.1 No dupliques la lógica de cálculo — factorízala
+
+La radiografía de un equipo y la radiografía global son *el mismo cálculo*,
+solo que una recibe la lista de integrantes de un equipo y la otra recibe la
+lista de integrantes de todos los equipos juntos. Escribe el cálculo una sola
+vez como método privado que reciba una lista plana de personas
+(`calcularDimensiones()` en `RespuestaMomentoModel.php` es el ejemplo), y
+luego:
+
+- `radiografiaPorEquipo()` lo llama una vez por cada equipo.
+- `radiografiaGlobal()` lo llama una sola vez con todos los integrantes de la
+  sesión mezclados, sin agrupar por equipo.
+
+### 5.2 El análisis de IA global no es el mismo prompt que el individual
+
+No le pidas al modelo que analice personas cuando compara equipos — dale
+solo los números ya agregados de cada equipo (sus dimensiones) y pídele dos
+cosas distintas: (a) qué patrón se repite en varios o todos los equipos (eso
+es una señal de cultura organizacional, no de un equipo aislado), y (b) qué
+diferencias notables hay entre equipos. Comparar equipos entre sí es válido y
+útil — a diferencia de comparar personas, no hay riesgo de señalar a nadie.
+
+Usa un `SYSTEM_PROMPT` separado para esto (`SYSTEM_PROMPT_GLOBAL` en
+`KimiAnalisis.php`), con su propia estructura de salida — no necesita la
+sección "punto de quiebre" del análisis por equipo, necesita "patrón
+general" + "diferencias entre equipos" + "una pregunta de cierre para toda la
+sesión".
+
+### 5.3 No llames a la IA si no hay nada que comparar
+
+Si la sesión tiene un solo equipo, el "resumen global" sería idéntico al
+resumen de ese equipo — no tiene sentido gastar una llamada a la API ni
+mostrar una tarjeta redundante. Pon una guarda explícita (`if
+count($equipos) < 2: return null`) tanto en el cálculo como en la vista.
+
+### 5.4 Guárdalo junto con los análisis por equipo, con una clave reservada
+
+No necesitas una columna nueva en la base de datos para esto. El análisis
+global se puede guardar en el mismo JSON que ya usas para los análisis por
+equipo (`sesiones.analisis_ia`), bajo una clave que nunca pueda chocar con un
+nombre real de equipo — por ejemplo `"__global__"`, ya que los equipos
+siempre se llaman `"Equipo 1"`, `"Equipo 2"`, etc.
+
+## 6. Consolidado entre sesiones del mismo cliente, a través del tiempo (opcional)
+
+Esto es **distinto** a la sección 5. El resumen global de la sección 5
+consolida **equipos dentro de una misma sesión** (un solo día). Esta sección
+consolida **sesiones distintas del mismo cliente, en fechas distintas** — por
+ejemplo, si "Empresa X" hizo el ejercicio en enero y otra vez en marzo, ver
+si el patrón se repite, mejora o empeora entre esas dos fechas.
+
+Ejemplo real construido para "Volver a Casa" (y replicado igual para "Código
+Azul"): `VolverACasaAnalisisModel::radiografiaConsolidadaPorCliente()` +
+`KimiAnalisisVolverACasa::analizarConsolidadoCliente()` +
+`SesionesController::consolidado()` / `enviarConsolidadoEmail()` + la vista
+`volver-a-casa/consolidado.php`. `SesionesController` resuelve qué modelo,
+librería de Kimi y vista usar por dinámica en `configConsolidable()` — un
+módulo nuevo que quiera este consolidado solo necesita agregar una entrada
+ahí, siguiendo la misma forma exacta de métodos que `VolverACasaAnalisisModel`
+y `CodigoAzulAnalisisModel`.
+
+### 6.1 Identifica el cliente por el campo `cliente`, no por una tabla nueva
+
+No hace falta una tabla de "clientes" — el texto libre que ya se escribe al
+crear cada sesión (`sesiones.cliente`) es suficiente para agrupar. Un método
+como `sesionesCerradasPorCliente($dinamicaId, $cliente)` filtra por
+`dinamica_id` + `cliente` + `estado = 'cerrada'`, ordenado por `cerrada_at`.
+
+### 6.2 Reutiliza `radiografiaGlobal()` por sesión, no la reinventes
+
+Cada sesión individual ya sabe calcular su propio promedio global (sección
+5.1: `radiografiaGlobal($sesionId)`). Para el consolidado entre sesiones,
+solo hace falta llamar a esa misma función una vez por cada sesión del
+cliente, y por separado, mezclar a **todos** los integrantes de **todas**
+las sesiones en un solo cálculo (`radiografiaConsolidadaPorCliente()`) para
+el promedio total. Son dos vistas del mismo dato: una por fecha (para ver la
+evolución) y una consolidada (para el número único).
+
+### 6.3 El prompt de IA aquí compara FECHAS, no equipos ni personas
+
+Usa un tercer `SYSTEM_PROMPT` (no reutilices el de equipos ni el global de
+una sesión) enfocado en evolución temporal: qué dimensiones se repiten sesión
+tras sesión (huella estructural de la organización) vs. cuáles cambian de una
+fecha a otra (posible efecto de una intervención, de un cambio de liderazgo,
+o variación normal). La regla de "no culpar" aplica igual, pero aquí es "no
+culpar a ninguna fecha/sesión", no equipos ni personas.
+
+### 6.4 El envío por correo aquí debe ser una acción explícita, no automática
+
+A diferencia del análisis por sesión (que se genera automáticamente al
+cerrar el ejercicio, sección 4.8), el consolidado por cliente **no** debe
+calcularse ni enviarse solo porque alguien entra a mirar la pantalla —
+llamar a la IA en cada visita sale caro y es lento sin necesidad. La pantalla
+de consolidado siempre debe mostrar gratis la tabla de números (no cuesta
+nada, es matemática), y dejar el análisis de Kimi + el envío del correo
+detrás de un botón explícito ("Generar análisis y enviar por correo") que el
+facilitador presiona cuando de verdad lo necesita — normalmente antes de una
+reunión con el cliente, no cada vez que pasa por ahí.
+
+### 6.5 Muestra el enlace solo donde ya hay algo que consolidar
+
+En la lista de sesiones de la dinámica, agrega un enlace "Ver consolidado"
+únicamente en las filas cuyo cliente ya tenga 2 o más sesiones cerradas
+(`clientesConsolidables()` — un `GROUP BY cliente HAVING COUNT(*) >= 2`). Si
+lo muestras siempre, la mayoría de las veces llevará a una pantalla vacía
+diciendo "no hay suficientes sesiones", lo cual es ruido innecesario.
+
+## 7. Checklist para arrancar un módulo nuevo
 
 1. Define el fenómeno humano que quieres medir (la "brecha" central,
    sección "Por qué funciona").
@@ -273,8 +421,16 @@ a nombres reales solo con autorización explícita.
    (sección 3).
 8. Escribe el prompt de IA siguiendo la sección 4, reusando
    `app/Libraries/KimiAnalisis.php` como plantilla.
-9. Prueba todo end-to-end con datos sintéticos (nombres falsos) antes de
-   usar nombres reales — nunca uses tu propio tester para mandar PII real a
-   una API externa sin que el usuario lo haya autorizado explícitamente.
-10. Despliega primero en local, corre las migraciones, y solo después de
+9. (Opcional, si el módulo se usará con grupos grandes) Agrega el resumen
+   consolidado entre equipos siguiendo la sección 5.
+10. (Opcional, si el mismo cliente va a repetir el ejercicio en distintas
+    fechas) Agrega el consolidado entre sesiones siguiendo la sección 6.
+11. Prueba todo end-to-end con datos sintéticos (nombres falsos) antes de
+    usar nombres reales — nunca uses tu propio tester para mandar PII real a
+    una API externa sin que el usuario lo haya autorizado explícitamente.
+    Si agregaste el resumen global, prueba también con 2+ equipos para
+    confirmar que compara bien y que con 1 solo equipo no aparece la
+    tarjeta. Si agregaste el consolidado por cliente, prueba con 2+ sesiones
+    cerradas en fechas distintas.
+12. Despliega primero en local, corre las migraciones, y solo después de
     confirmar que funciona, despliega a producción.

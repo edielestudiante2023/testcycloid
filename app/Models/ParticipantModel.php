@@ -11,7 +11,7 @@ class ParticipantModel extends Model
     protected $allowedFields = [
         'sesion_id', 'nombre', 'documento', 'cargo', 'email_corporativo', 'email_personal',
         'whatsapp', 'tiene_personal_a_cargo', 'autorizo_datos', 'mostro_liderazgo',
-        'team', 'role', 'token',
+        'team', 'role', 'token', 'intro_visto_at',
     ];
     protected $useTimestamps = true;
     protected $returnType    = 'array';
