@@ -43,6 +43,13 @@
     <div class="bloque">
         <h2><?= esc($eq['team']) ?></h2>
 
+        <?php if (!empty($eq['integrantes'])): ?>
+        <p class="muted">
+            <?php $partes = []; foreach ($eq['integrantes'] as $i) { $partes[] = $i['nombre'] . ' (' . $i['rol'] . ')'; } ?>
+            <?= esc(implode(', ', $partes)) ?>
+        </p>
+        <?php endif; ?>
+
         <?php if (!empty($eq['radiografia']['dimensiones'])): ?>
         <table>
             <?php foreach ($eq['radiografia']['dimensiones'] as $dimension => $nivel): ?>

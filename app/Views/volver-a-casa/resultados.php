@@ -48,6 +48,13 @@
         <div class="card">
             <h2><?= esc($eq['team']) ?></h2>
 
+            <?php if (!empty($eq['integrantes'])): ?>
+            <p class="muted">
+                <?php $partes = []; foreach ($eq['integrantes'] as $i) { $partes[] = $i['nombre'] . ' (' . $i['rol'] . ')'; } ?>
+                <?= esc(implode(', ', $partes)) ?>
+            </p>
+            <?php endif; ?>
+
             <?php if (!empty($eq['radiografia']['dimensiones'])): ?>
             <table style="margin-bottom:20px;">
                 <thead><tr><th>Dimensión</th><th>Nivel</th></tr></thead>

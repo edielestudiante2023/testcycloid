@@ -609,9 +609,25 @@ class SesionesController extends BaseController
             $radiografiaPorEquipo[$r['team']] = $r;
         }
 
+        $nombresRol = $this->nombresRolPorDinamica($sesion['dinamica_slug']);
+        $integrantesPorEquipo = [];
+        $miembros = (new ParticipantModel())
+            ->where('sesion_id', (int) $sesion['id'])
+            ->where('team IS NOT NULL')
+            ->where('activo', 1)
+            ->orderBy('role', 'ASC')
+            ->findAll();
+        foreach ($miembros as $m) {
+            $integrantesPorEquipo[$m['team']][] = [
+                'nombre' => $m['nombre'],
+                'rol'    => $nombresRol[$m['role']] ?? $m['role'],
+            ];
+        }
+
         foreach ($equipos as &$eq) {
             $eq['analisisIa'] = $analisisPorEquipo[$eq['team']] ?? null;
             $eq['radiografia'] = $radiografiaPorEquipo[$eq['team']] ?? null;
+            $eq['integrantes'] = $integrantesPorEquipo[$eq['team']] ?? [];
         }
         unset($eq);
 
