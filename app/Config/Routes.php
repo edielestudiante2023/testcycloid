@@ -68,6 +68,8 @@ $routes->group('volver-a-casa', static function (RouteCollection $routes) {
     $routes->get('estado/(:segment)', 'VolverACasaController::estado/$1');
 });
 
+$routes->get('simulacro-21-octubre', 'SimulacroController::index');
+
 $routes->group('codigo-azul', static function (RouteCollection $routes) {
     $routes->get('registro/(:segment)', 'CodigoAzulController::registro/$1');
     $routes->post('asignar', 'CodigoAzulController::asignar');
