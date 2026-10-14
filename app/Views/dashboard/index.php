@@ -18,11 +18,6 @@
         <h1>Dinámicas de Capacitación Virtual</h1>
         <p class="muted">Selecciona una dinámica para crear una sesión nueva o ver sus sesiones anteriores.</p>
     </div>
-    <div class="card">
-        <h2>Simulacro 21 Oct 2026</h2>
-        <p class="muted">Página pública (sin login) con el video, el poster y los contactos de WhatsApp para el simulacro de evacuación.</p>
-        <a class="btn" href="<?= site_url('simulacro-21-octubre') ?>" target="_blank" rel="noopener">Abrir</a>
-    </div>
     <?php foreach ($dinamicas as $d): ?>
         <div class="card">
             <h2><?= esc($d['nombre']) ?></h2>

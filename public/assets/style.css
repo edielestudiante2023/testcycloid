@@ -202,64 +202,6 @@ th { color: var(--muted); font-weight: 600; }
 }
 .pwa-ios-modal-content .btn-close-ios:hover { background: var(--brand-dark); }
 
-.btn-download-big {
-    display: block;
-    width: 100%;
-    text-align: center;
-    background: var(--brand);
-    color: #fff;
-    font-size: 1.3rem;
-    font-weight: 800;
-    padding: 18px;
-    border-radius: 12px;
-    text-decoration: none;
-    margin-top: 14px;
-    box-shadow: 0 4px 14px rgba(3, 69, 191, 0.3);
-}
-.btn-download-big:hover { background: var(--brand-dark); }
-
-.media-box video, .media-box img {
-    width: 100%;
-    border-radius: 10px;
-    display: block;
-    background: #000;
-}
-
-.contact-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 12px 0;
-    border-bottom: 1px solid var(--border);
-}
-.contact-row:last-child { border-bottom: none; }
-.contact-info strong { display: block; }
-.contact-info span { color: var(--muted); font-size: 0.9rem; }
-.btn-whatsapp {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    background: #25D366;
-    color: #fff;
-    font-weight: 700;
-    padding: 10px 16px;
-    border-radius: 8px;
-    text-decoration: none;
-    white-space: nowrap;
-    margin-top: 0;
-}
-.btn-whatsapp:hover { background: #1ebe5b; }
-
-.reminder-box {
-    background: #fff7e6;
-    border: 2px solid #f0b94a;
-    border-radius: 12px;
-    padding: 18px;
-    text-align: center;
-}
-.reminder-box .fecha { font-size: 1.4rem; font-weight: 800; color: var(--ink); }
-
 @media (prefers-color-scheme: dark) {
     :root {
         color-scheme: dark;

@@ -49,11 +49,6 @@ app/Config/Mail.*.php
 app/Config/Kimi.*.php
 
 #-------------------------
-# Archivos multimedia pesados (se suben directo al servidor, no via git)
-#-------------------------
-public/assets/simulacro/*
-
-#-------------------------
 # Temporary Files
 #-------------------------
 /writable/cache/*
